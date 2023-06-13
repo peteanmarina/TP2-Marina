@@ -7,7 +7,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import tempfile
-#vicky, para el ingreso de dinero, ver funcion"registrar_nueva_transaccion"
+#clave prestada del profe: b954d11d14d63f5c19f0eeb8953724c3
+#mi clave: 
 
 def ingresar_entero(min: int, max: int)->int:
     #Funcion que recibe un numero número mínimo y uno máximo y permite al usuario ingresar valores hasta que uno sea entero y se encuentre en el rango númerico indicado por esos números
@@ -20,7 +21,8 @@ def ingresar_entero(min: int, max: int)->int:
         
     return int(número)
 
-def cargar_usuarios() -> dict:
+def obtener_usuarios()-> dict:
+    #Se encarga de guardar en un diccionario la información del archivo de usuarios
     usuarios = {}
     archivo_usuarios = 'usuarios.csv'
     
@@ -40,7 +42,7 @@ def cargar_usuarios() -> dict:
     return usuarios
 
 def guardar_usuarios(usuarios):
-
+    #Reescribe el archivo usuarios con el contenido actualizado presente en el diccionario usuarios
     with open('usuarios.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
         csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
         csv_writer.writerow(['correo', 'nombre', 'contrasena', 'cantidad_total_apostada', 'fecha_ultima_apuesta', 'dinero'])  # Escribir el encabezado
@@ -56,46 +58,57 @@ def guardar_usuarios(usuarios):
             ])
 
 def registrar_usuario(usuarios)-> str: #TODO validar mail no repetido
+    #permite guardar un nuevo usuario en el diccionario de usuarios, siempre y cuando el main no exista en el mismo
+    #devuelve 0 si el mail ya existe
     myctx = CryptContext(schemes=["sha256_crypt", "md5_crypt"])
 
     correo = input("Ingrese correo electrónico: ")
-    nombre = input("Ingrese su nombre de usuario:")
-    contrasena = myctx.hash(input("Ingrese su contraseña: "))
-    dinero = float(input("Ingrese el dinero disponible:"))
 
-    usuarios[correo] = {
-        'nombre': nombre,
-        'contrasena': contrasena,
-        'cantidad_total_apostada': 0, #apostada hasta el momento
-        'fecha_ultima_apuesta': None, #de la ultima apuesta
-        'dinero': dinero
-    }
+    if(correo in usuarios):
+        print("Ya existe un usuario registrado con ese correo")
+        correo=0
+    else:
+        nombre = input("Ingrese su nombre de usuario:")
+        contrasena = myctx.hash(input("Ingrese su contraseña: "))
+        dinero = float(input("Ingrese el dinero disponible:"))
+        usuarios[correo] = {
+            'nombre': nombre,
+            'contrasena': contrasena,
+            'cantidad_total_apostada': 0, #apostada hasta el momento
+            'fecha_ultima_apuesta': None, #de la ultima apuesta
+            'dinero': dinero
+        }
+        print("Registro realizado")
 
-    print("Registro realizado")
     return correo 
 
-def iniciar_sesion(usuarios) -> str:
-
+def iniciar_sesion(usuarios:dict) -> str:
+    #recibe el diccionario de usuarios y permite que un usuario se identifique, siempre que exista y ingrese su contraseña correctamente
+    #devuelve 0 si
     myctx = CryptContext(schemes=["sha256_crypt", "md5_crypt"])
     myctx.default_scheme()
     correo = input("Ingrese su correo electrónico:")
     contrasena = input("Ingrese su contraseña: ")
 
-    if correo in usuarios and myctx.verify(contrasena, usuarios[correo]['contrasena']):
-        print("Inicio de sesión realizado")
+    if correo in usuarios:
+        if(myctx.verify(contrasena, usuarios[correo]['contrasena'])):
+            print("Inicio de sesión realizado")
+        else:
+            print("Contraseña incorrecta")
+            correo=0
     else:
-        print("Contraseña incorrecta")
+        print("No hay ninguna cuenta con ese mail")
         correo=0
+
     return correo
 
 def mostrar_menu():
-    #cambiar: primero inicia sesion o se registra, y después vienen las demás opciones
     print("Ingrese el número correspondiente a la opción que desee:")
     print("0) Salir")
-    print("1) Mostrar el plantel completo de un equipo ingresado") #incompleto falta escudo
-    print("2) Mostrar la tabla de posiciones de la Liga profesional, ingresando la temporada")
-    print("3) Mostrar toda la información posible sobre el estadio y escudo de un equipo")
-    print("4) Mostrar los goles y los minutos en los que fueron realizados para un equipo")
+    print("1) Mostrar el plantel completo de un equipo ingresado")
+    print("2) Mostrar la tabla de posiciones de la Liga profesional de una temporada")
+    print("3) Información sobre el estadio y escudo de un equipo")
+    print("4) Goles y los minutos en los que fueron realizados para un equipo")
     print("5) Cargar dinero en cuenta de usuario") 
     print("6) Usuario que más apostó") 
     print("7) Usuario que más gano")
@@ -263,7 +276,7 @@ def obtener_win_or_draw(partido)-> str: #tengo que hacer una consulta si o si po
         print("Error en la solicitud:", respuesta.status_code)
     return equipo_win_or_draw
 
-def cargar_transacciones()->dict:
+def obtener_transacciones()->dict:
     transacciones = {}
     archivo_transacciones = 'transacciones.csv'
     usuarios=[]
@@ -294,7 +307,7 @@ def guardar_transaccion_en_diccionario(id_usuario:str, transacciones:dict, fecha
         # usuario no tiene transacciones
         transacciones[id_usuario] = [transaccion]
 
-def registrar_transacciones(transacciones):
+def guardar_transacciones(transacciones):
     print(transacciones)
     with open('transacciones.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
         csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
@@ -509,20 +522,28 @@ def obtener_id_equipo(equipos, equipo_elegido)->str:
     return id
 
 def main():   
+    print("Bienvenidx al portal de apuestas Jugarsela")
+    usuarios:dict=obtener_usuarios()
+    transacciones:dict=obtener_transacciones()
+    fixtures:dict= obtener_fixtures()
+    equipos:dict= obtener_equipos()
+    jugadores:dict=obtener_jugadores()
+    
     finalizar = False
-    id_usuario:str= 0
-    usuarios=cargar_usuarios()
-    while (id_usuario==0):
-        print("Tiene una cuenta? 1: Si, otro caracter: no")
-        if(input() == "1"):
-            id_usuario = iniciar_sesion(usuarios)
-        else:
-            id_usuario= registrar_usuario(usuarios)
-    transacciones=cargar_transacciones()
-    fixtures= obtener_fixtures()
-    equipos=obtener_equipos()
-    jugadores=obtener_jugadores()
 
+    id_usuario:str= 0
+    while (id_usuario==0 and not finalizar): #mientras que no se identifique y no decida salir
+        print("1)Iniciar sesión")
+        print("2)Registrarse")
+        print("3)Salir")
+        respuesta:int=int(ingresar_entero(1,3))
+        if(respuesta == 1):
+            id_usuario = iniciar_sesion(usuarios)
+        elif(respuesta == 2):
+            id_usuario= registrar_usuario(usuarios)
+        elif(respuesta == 3):
+            finalizar= True
+    
     while not finalizar:
         mostrar_menu()
         opcion = input()
@@ -530,8 +551,9 @@ def main():
             ejecutar_accion(opcion, equipos, fixtures, jugadores ,id_usuario, usuarios, transacciones)
         else:
             finalizar = True
-            print("Hasta pronto")
             guardar_usuarios(usuarios)
-            registrar_transacciones(transacciones)
-           
+            guardar_transacciones(transacciones)
+    
+    print("Hasta pronto")
+
 main()
