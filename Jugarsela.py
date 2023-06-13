@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import tempfile
 #clave prestada del profe: b954d11d14d63f5c19f0eeb8953724c3
-#mi clave: 
+#mi clave: 780851d3b9e161c8b5dddd46f9e9da9a
 
 def ingresar_entero(min: int, max: int)->int:
     #Funcion que recibe un numero número mínimo y uno máximo y permite al usuario ingresar valores hasta que uno sea entero y se encuentre en el rango númerico indicado por esos números
@@ -114,62 +114,6 @@ def mostrar_menu():
     print("7) Usuario que más gano")
     print("8) Apostar")
     
-def ejecutar_accion(opcion:str, equipos:dict, fixtures: dict, jugadores:dict, id_usuario:str, usuarios:dict, transacciones:dict):
-    if opcion == "1": 
-        print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
-        mostrar_equipos(equipos)
-        id=0
-        while(id==0):
-            print("Ingrese nombre del equipo que desee ver el plantel")
-            equipo_elegido=input()
-            id= obtener_id_equipo(equipos, equipo_elegido)
-        mostrar_plantel(id, jugadores)
-
-    elif opcion == "2":
-        print("Ingrese la temporada (el anio) de la cual desea ver la tabla de posiciones(junto a otras stats): ")
-        temporada:int = input("Temporada: ")
-        mostrar_tabla_posiciones(temporada)
-
-    elif opcion == "3":
-        print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
-        mostrar_equipos(equipos)
-        id=0
-        while(id==0):
-            print("Ingrese nombre del equipo que desee ver la información sobre el estadio y su escudo")
-            equipo_elegido= input()
-            id=obtener_id_equipo(equipos, equipo_elegido)
-        mostrar_informacion_estadio_y_escudo(id, equipos)
-
-    elif opcion == "4":
-        pass
-
-    elif opcion == "5":
-        confirmacion = input("¿Desea cargar dinero a cuenta? (S/N)").lower()
-        if confirmacion == "s":
-            print("Ingrese monto a agregar")
-            monto=ingresar_entero(1,99999)
-            modificar_dinero_usuario(id_usuario, monto, "Sumar", usuarios)
-
-    elif opcion == "6": 
-        print ("Usuario que más apostó:")
-        cantidad_max=0
-        for usuario in usuarios:
-            if usuario['cantidad_total_apostada']>cantidad_max:
-                cantidad_max=usuario['cantidad_total_apostada']
-                usuario_mas_aposto=usuario['nombre']
-        print(f"El usuario que más dinero apostó hasta la fecha es ",usuario_mas_aposto)
-
-    elif opcion == "7":
-        print ("Usuario que más gano:")
-        for usuario in transacciones:
-            pass
-    elif opcion == "8":
-        print("Bienvenidx al sistema de apuestas")
-        apostar(equipos, fixtures, id_usuario, usuarios, transacciones)
-
-    else:
-        print("Error, intente nuevamente (recuerde que debe ingresar un número)")
-
 def apostar(equipos:dict, fixtures: dict, id_usuario:int, usuarios:dict, transacciones:dict):
     print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
     mostrar_equipos(equipos)
@@ -263,7 +207,7 @@ def obtener_win_or_draw(partido)-> str: #tengo que hacer una consulta si o si po
     }
     headers = {
         'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "780851d3b9e161c8b5dddd46f9e9da9a"
+        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
     }
     equipo_win_or_draw:str=""
     respuesta = requests.get(url, params=params, headers=headers)
@@ -308,7 +252,6 @@ def guardar_transaccion_en_diccionario(id_usuario:str, transacciones:dict, fecha
         transacciones[id_usuario] = [transaccion]
 
 def guardar_transacciones(transacciones):
-    print(transacciones)
     with open('transacciones.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
         csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
         csv_writer.writerow(['id_usuario', 'fecha', 'tipo', 'importe'])  # escribo el encabezado    
@@ -334,20 +277,7 @@ def modificar_dinero_usuario(id_usuario:str, monto:float, operación:str, usuari
 
     print (f"Ahora posee {usuarios[id_usuario]['dinero']} disponible en su cuenta. ")
 
-
-def verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto)->bool:
-    archivo_usuarios = 'usuarios.csv'
-    usuarios = {}
-
-    if os.path.isfile(archivo_usuarios):
-        with open(archivo_usuarios, 'r', encoding='UTF-8') as archivo_csv:
-            csv_reader = csv.reader(archivo_csv, delimiter=',')
-            next(csv_reader)
-            for row in csv_reader:
-                correo = row[0]
-                usuarios[correo] = {
-                    'dinero': float(row[5])
-                }
+def verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto, usuarios:dict)->bool:
     dinero_suficiente= False
     if id_usuario in usuarios:
         dinero = float(usuarios[id_usuario]['dinero'])
@@ -359,10 +289,14 @@ def obtener_cantidad_de_veces()->int:
     cantidad_veces=random.randint(1, 4)
     return cantidad_veces
 
-def mostrar_plantel(id_equipo:int, jugadores:dict)->None:
+def mostrar_plantel(id_equipo:int, jugadores:dict)->None: 
+    #TODO revisar si imprime todos, y no solo los que tienen el equipo en el primer lugar
+    print("Plantel del equipo elegido:")
     for jugador in jugadores:
-        if(jugador['statistics'][0]['team']['id']==id_equipo):
-            print(jugador['player']['name'])
+        for estadistica in jugador['statistics']:
+            if estadistica['team']['id'] == id_equipo:
+                print(jugador['player']['name'])
+
 
 def obtener_equipos()->dict:
     url = "https://v3.football.api-sports.io/teams"
@@ -373,7 +307,7 @@ def obtener_equipos()->dict:
     }
     headers = {
         'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "780851d3b9e161c8b5dddd46f9e9da9a"
+        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
     }
     
     # solicito los equipos de la liga argentina
@@ -421,7 +355,7 @@ def mostrar_tabla_posiciones(temporada)->dict: #temporada es año
     }
     headers = {
         'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "780851d3b9e161c8b5dddd46f9e9da9a"
+        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
     }
     respuesta = requests.get(url, params=params, headers=headers)
     posiciones={}
@@ -442,10 +376,9 @@ def obtener_jugadores()->dict:
         "league": "128",
         "season": 2023
     }
-
     headers = {
         'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "780851d3b9e161c8b5dddd46f9e9da9a"
+        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
     }
     
     # solicito equipo indicado por parametro
@@ -458,6 +391,28 @@ def obtener_jugadores()->dict:
     else:
         print("Error en la solicitud:", respuesta.status_code)
     return jugadores
+
+def obtener_estadisticas_equipo(id_equipo)->dict:
+    url = "https://v3.football.api-sports.io/teams/statistics"
+    params = {
+        "league": "128",
+        "season": 2023,
+        "team": id_equipo
+    }
+    headers = {
+        'x-rapidapi-host': "v3.football.api-sports.io",
+        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
+    }
+    # solicito estadisticas de equipo indicado por parametro
+    respuesta = requests.get(url, params=params, headers=headers)
+    estadisticas_equipo:dict={}
+    # verifico estado de la solicitud
+    if respuesta.status_code == 200: #si fue exitosa
+        data = respuesta.json()
+        estadisticas_equipo = data['response']
+    else:
+        print("Error en la solicitud:", respuesta.status_code)
+    return estadisticas_equipo
 
 
 def obtener_fixtures()->dict:
@@ -523,15 +478,15 @@ def obtener_id_equipo(equipos, equipo_elegido)->str:
 
 def main():   
     print("Bienvenidx al portal de apuestas Jugarsela")
-    usuarios:dict=obtener_usuarios()
-    transacciones:dict=obtener_transacciones()
-    fixtures:dict= obtener_fixtures()
-    equipos:dict= obtener_equipos()
-    jugadores:dict=obtener_jugadores()
-    
-    finalizar = False
+    usuarios:dict=obtener_usuarios() #del archivo usuarios.csv
+    transacciones:dict=obtener_transacciones() #del archivo transacciones.csv
+    fixtures:dict= obtener_fixtures() #de la api
+    equipos:dict= obtener_equipos() #de la api
+    jugadores:dict=obtener_jugadores() #de la api    
 
-    id_usuario:str= 0
+    finalizar = False #True si el usuario decide salir
+    id_usuario:str= 0 #Si hubo problemas al identificarse
+
     while (id_usuario==0 and not finalizar): #mientras que no se identifique y no decida salir
         print("1)Iniciar sesión")
         print("2)Registrarse")
@@ -546,9 +501,68 @@ def main():
     
     while not finalizar:
         mostrar_menu()
-        opcion = input()
-        if opcion!= "0":
-            ejecutar_accion(opcion, equipos, fixtures, jugadores ,id_usuario, usuarios, transacciones)
+        opcion = ingresar_entero(0,8)
+        if opcion!= 0: #opcion distinta de 0)Salir
+            if opcion == 1: 
+                print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
+                mostrar_equipos(equipos)
+                id=0
+                while(id==0):
+                    print("Ingrese nombre del equipo que desee ver el plantel")
+                    equipo_elegido=input()
+                    id= obtener_id_equipo(equipos, equipo_elegido)
+                mostrar_plantel(id, jugadores)
+
+            elif opcion == 2:
+                print("Ingrese la temporada (el anio) de la cual desea ver la tabla de posiciones(junto a otras stats): ")
+                temporada:int= input()
+                mostrar_tabla_posiciones(temporada)
+
+            elif opcion == 3:
+                print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
+                mostrar_equipos(equipos)
+                id=0
+                while(id==0):
+                    print("Ingrese nombre del equipo que desee ver la información sobre el estadio y su escudo")
+                    equipo_elegido= input()
+                    id=obtener_id_equipo(equipos, equipo_elegido)
+                mostrar_informacion_estadio_y_escudo(id, equipos)
+
+            elif opcion == 4:
+                id=0
+                while(id==0):
+                    print("Ingrese nombre del equipo que desee ver goles por minutos")
+                    equipo_elegido=input()
+                    id= obtener_id_equipo(equipos, equipo_elegido)
+                estadisticas= obtener_estadisticas_equipo(id)
+                goles_por_minuto=estadisticas['goals']['minute']
+                print(goles_por_minuto)
+
+            elif opcion == 5:
+                print("Elegiste cargar dinero")
+                print("Ingrese monto, para cancelar ingrese 0")
+                monto=ingresar_entero(0,99999)
+                if(monto!=0):
+                    modificar_dinero_usuario(id_usuario, monto, "Sumar", usuarios)
+
+            elif opcion == 6: 
+                print ("Usuario que más apostó:")
+                cantidad_max=0
+                for usuario in usuarios:
+                    if usuario['cantidad_total_apostada']>cantidad_max:
+                        cantidad_max=usuario['cantidad_total_apostada']
+                        usuario_mas_aposto=usuario['nombre']
+                print(f"El usuario que más dinero apostó hasta la fecha es ",usuario_mas_aposto)
+
+            elif opcion == 7:
+                print ("Usuario que más gano:")
+                for usuario in transacciones:
+                    pass
+            elif opcion == 8:
+                print("Bienvenidx al sistema de apuestas")
+                apostar(equipos, fixtures, id_usuario, usuarios, transacciones)
+            else:
+                print("Error desconocido (revisar validación)")
         else:
             finalizar = True
             guardar_usuarios(usuarios)
