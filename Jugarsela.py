@@ -7,24 +7,37 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import tempfile
-#clave prestada del profe: b954d11d14d63f5c19f0eeb8953724c3
-#mi clave: 780851d3b9e161c8b5dddd46f9e9da9a
+URL = "https://v3.football.api-sports.io"
+CLAVE= "b1026f7aeb5dec5f5718843763856307"
+API= "v3.football.api-sports.io"
 
 def ingresar_entero(min: int, max: int)->int:
     #Funcion que recibe un numero número mínimo y uno máximo y permite al usuario ingresar valores hasta que uno sea entero y se encuentre en el rango númerico indicado por esos números
     #Devuelve un entero, ingresado por el usuario
-    número=input()
-    while (not número.isdigit() or int(número)>max or int(número)<min):
+    numero=input()
+    while (not numero.isdigit() or int(numero)>max or int(numero)<min):
         #Si la primera condicion se cumple, no lee las que siguen y por eso ya puedo convertirlo a int
-        print(f"ERROR. Intente de nuevo, recuerde que debe ser un número entero entre {min} y {max}")
-        número=input()
+        print(f"ERROR. Intente de nuevo, recuerde que debe ser un numero entero entre {min} y {max}")
+        numero=input()
         
-    return int(número)
+    return int(numero)
+
+def ingresar_float(min: float, max: float):
+    numero:str=""
+    while(numero==""):
+        try:
+            numero=input()
+            numero= float(numero)
+        except:
+            print("Intente nuevamente")
+            numero=""
+    return float(numero)
+            
 
 def obtener_usuarios()-> dict:
     #Se encarga de guardar en un diccionario la información del archivo de usuarios
-    usuarios = {}
-    archivo_usuarios = 'usuarios.csv'
+    usuarios:dict = {}
+    archivo_usuarios:str = 'usuarios.csv'
     
     if os.path.isfile(archivo_usuarios): # si el archivo existe
         with open(archivo_usuarios, 'r', encoding='UTF-8') as archivo_csv: # modo lectura
@@ -41,7 +54,7 @@ def obtener_usuarios()-> dict:
                 }
     return usuarios
 
-def guardar_usuarios(usuarios):
+def guardar_usuarios(usuarios:dict)-> None:
     #Reescribe el archivo usuarios con el contenido actualizado presente en el diccionario usuarios
     with open('usuarios.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
         csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
@@ -57,20 +70,19 @@ def guardar_usuarios(usuarios):
                 datos['dinero']
             ])
 
-def registrar_usuario(usuarios)-> str: #TODO validar mail no repetido
+def registrar_usuario(usuarios:dict)-> str:
     #permite guardar un nuevo usuario en el diccionario de usuarios, siempre y cuando el main no exista en el mismo
     #devuelve 0 si el mail ya existe
     myctx = CryptContext(schemes=["sha256_crypt", "md5_crypt"])
 
-    correo = input("Ingrese correo electrónico: ")
-
+    correo:str = input("Ingrese correo electrónico: ")
     if(correo in usuarios):
         print("Ya existe un usuario registrado con ese correo")
         correo=0
     else:
-        nombre = input("Ingrese su nombre de usuario:")
-        contrasena = myctx.hash(input("Ingrese su contraseña: "))
-        dinero = float(input("Ingrese el dinero disponible:"))
+        nombre:str = input("Ingrese su nombre de usuario:")
+        contrasena:str = myctx.hash(input("Ingrese su contraseña: "))
+        dinero:float = float(input("Ingrese el dinero disponible:"))
         usuarios[correo] = {
             'nombre': nombre,
             'contrasena': contrasena,
@@ -78,6 +90,7 @@ def registrar_usuario(usuarios)-> str: #TODO validar mail no repetido
             'fecha_ultima_apuesta': None, #de la ultima apuesta
             'dinero': dinero
         }
+        guardar_usuarios(usuarios) #se asienta en el archivo
         print("Registro realizado")
 
     return correo 
@@ -87,8 +100,8 @@ def iniciar_sesion(usuarios:dict) -> str:
     #devuelve 0 si
     myctx = CryptContext(schemes=["sha256_crypt", "md5_crypt"])
     myctx.default_scheme()
-    correo = input("Ingrese su correo electrónico:")
-    contrasena = input("Ingrese su contraseña: ")
+    correo:str = input("Ingrese su correo electrónico:")
+    contrasena:str = input("Ingrese su contraseña: ")
 
     if correo in usuarios:
         if(myctx.verify(contrasena, usuarios[correo]['contrasena'])):
@@ -99,7 +112,6 @@ def iniciar_sesion(usuarios:dict) -> str:
     else:
         print("No hay ninguna cuenta con ese mail")
         correo=0
-
     return correo
 
 def mostrar_menu():
@@ -114,13 +126,13 @@ def mostrar_menu():
     print("7) Usuario que más gano")
     print("8) Apostar")
     
-def apostar(equipos:dict, fixtures: dict, id_usuario:int, usuarios:dict, transacciones:dict):
+def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transacciones:dict):
     print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
     mostrar_equipos(equipos)
     print("Ingrese nombre de un equipo para ver un listado del fixture")
     equipo_elegido= input()
     id_equipo= obtener_id_equipo(equipos, equipo_elegido)
-    informacion_partidos={}
+    informacion_partidos:dict={}
     for partido in fixtures:
         if(partido["teams"]["home"]["id"]==id_equipo or partido["teams"]["away"]["id"]==id_equipo):
             id_partido=partido['fixture']['id']
@@ -137,8 +149,12 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:int, usuarios:dict, transac
             
     print("Ingrese la fecha del partido para el que quiere apostar, YYYY-MM-DD")
     fecha= validar_fecha()
+    params = {
+        "fixture":informacion_partidos[fecha][4]
+    }
 
-    equipo_win_or_draw= obtener_win_or_draw(informacion_partidos[fecha][4])
+    prediccion= consultar_api("/predictions",params)
+    equipo_win_or_draw = prediccion[0]['predictions']["winner"]["name"]
 
     if(equipo_win_or_draw == informacion_partidos[fecha][0]):
         informacion_partidos[fecha][2]=informacion_partidos[fecha][2]*10/100
@@ -151,46 +167,41 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:int, usuarios:dict, transac
     print(f"Equipo visitante:", informacion_partidos[fecha][1],"paga: ",informacion_partidos[fecha][3],"veces de lo apostado")
 
     print("Ingrese el monto a apostar")
-    monto= input()
+    monto_a_apostar= ingresar_float()
     dinero_suficiente= verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto)
 
     if (dinero_suficiente):
         print("Ahora le solicitaremos la fecha del día de hoy")
         fecha_actual=validar_fecha()
         print("Descontando dinero...")
-        registrar_apuesta_en_usuario(id_usuario, monto, fecha_actual, usuarios)#actualiza fecha ultima apuesta y suma monto al total apostado
-        modificar_dinero_usuario(id_usuario, monto, "Restar")
+        registrar_apuesta_en_usuario(id_usuario, monto_a_apostar, fecha_actual, usuarios) #actualiza fecha ultima apuesta y suma monto al total apostado
+        modificar_dinero_usuario(id_usuario, monto_a_apostar, "Restar")
 
         print("1)Gana Local")
         print("2)Empate")
         print("3)Gana Visitante")
 
-        respuesta=ingresar_entero(1,3)
+        respuesta=ingresar_entero(1,3) #apuesta
 
-        #la lógica del pago fue aprobada por un profesor
-        if(respuesta==1):  
-            monto+=(informacion_partidos[fecha][2]*monto)
-        elif(respuesta==3):
-            monto+=(informacion_partidos[fecha][3]*monto)
-        else:#empate, ver que hacer TODO
-            pass
-
-        resultado_simulado=random.randint(1, 3)
+        resultado_simulado=random.randint(1, 3) #resultado simulado del partido
         
-        if(resultado_simulado==1):
-            print("Gana Local")
-        elif(resultado_simulado==2):
-            print("Empate")
-        else:
-            print("Gana visitante")
+        if(resultado_simulado==respuesta):#gana
 
-        if(resultado_simulado==respuesta):
-            #gana el usuario
-            guardar_transaccion_en_diccionario(id_usuario, transacciones, fecha_actual, "Gana", monto)
+            if(resultado_simulado==1):#apuesta gana local y gana local
+                monto=monto_a_apostar+(informacion_partidos[fecha][2]*monto)
+
+            elif(resultado_simulado==2):#apuesta empate, pagaría la mitad
+                monto=monto_a_apostar+(monto/2)
+
+            elif(resultado_simulado==3):#apuesta gana visitante
+                monto=monto_a_apostar+(informacion_partidos[fecha][3]*monto)
+            ganancia_total=monto_a_apostar-monto
+            #la transaccion que guardo contempla la devolucion del dinero + lo que gana como tal
+            guardar_transaccion_en_diccionario(id_usuario, transacciones, fecha_actual, "Gana", ganancia_total)
             modificar_dinero_usuario(id_usuario, monto, "Sumar")
+
         else: #pierde
-            print("Perdiste... mejor suerte la próxima")
-        #informacion_partidos[fecha]=(local, visitante, pago_local, pago_visitante, id_partido)
+            print(f"Perdiste tus ",monto_a_apostar,"pesos, mejor suerte la próxima")
     else:
         print("Lamento informarle que no tiene dinero suficiente para realizar esta apuesta")
 
@@ -199,26 +210,6 @@ def registrar_apuesta_en_usuario(id_usuario, monto, fecha, usuarios):
     usuarios[id_usuario]['cantidad_total_apostada']+=monto
     usuarios[id_usuario]['fecha_ultima_apuesta']+=monto
 
-
-def obtener_win_or_draw(partido)-> str: #tengo que hacer una consulta si o si por partido, no puedo guardarme todas
-    url = "https://v3.football.api-sports.io/predictions"
-    params = {
-        "fixture":partido
-    }
-    headers = {
-        'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
-    }
-    equipo_win_or_draw:str=""
-    respuesta = requests.get(url, params=params, headers=headers)
-
-    if respuesta.status_code == 200:
-        data = respuesta.json()
-        prediccion = data['response']
-        equipo_win_or_draw = prediccion[0]['predictions']["winner"]["name"]
-    else:
-        print("Error en la solicitud:", respuesta.status_code)
-    return equipo_win_or_draw
 
 def obtener_transacciones()->dict:
     transacciones = {}
@@ -297,29 +288,24 @@ def mostrar_plantel(id_equipo:int, jugadores:dict)->None:
             if estadistica['team']['id'] == id_equipo:
                 print(jugador['player']['name'])
 
+def consultar_api(endpoint:str, params:dict)->dict:
+    try:
+        url = URL + endpoint
+        headers = {
+            'x-rapidapi-host': API,
+            'x-rapidapi-key': CLAVE
+        }
+        resultado = requests.get(url, params=params, headers=headers)
+    except:
+        print("Error al conectarse con el servidor")
 
-def obtener_equipos()->dict:
-    url = "https://v3.football.api-sports.io/teams"
-    params = {
-        "league": "128",
-        "country": "Argentina",
-        "season": 2023
-    }
-    headers = {
-        'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
-    }
-    
-    # solicito los equipos de la liga argentina
-    respuesta = requests.get(url, params=params, headers=headers)
-    equipos={}
     # verifico estado de la solicitud
-    if respuesta.status_code == 200: #si fue exitosa
-        data = respuesta.json()
-        equipos = data['response']        
+    if resultado.status_code == 200: #si fue exitosa
+        data = resultado.json()
+        respuesta = data['response']        
     else:
-        print("Error en la solicitud:", respuesta.status_code)
-    return equipos
+        print("Error en la solicitud:", resultado.status_code)
+    return respuesta
 
 def mostrar_informacion_estadio_y_escudo(id_equipo, equipos):
     estadio:dict={}
@@ -346,100 +332,6 @@ def mostrar_informacion_estadio_y_escudo(id_equipo, equipos):
     plt.imshow(imagen)
     plt.show()
     os.remove(nombre_imagen_temporal)
-
-def mostrar_tabla_posiciones(temporada)->dict: #temporada es año
-    url = "https://v3.football.api-sports.io/standings"
-    params = {
-        "league": "128",
-        "season": temporada
-    }
-    headers = {
-        'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
-    }
-    respuesta = requests.get(url, params=params, headers=headers)
-    posiciones={}
-    if respuesta.status_code == 200: #si fue exitosa
-        data = respuesta.json()
-        posiciones = data['response']
-        print("Posicion---Equipo---Pts---P.J---P.G---P.E---P.P")
-        if(len(posiciones)>0):
-            for equipo in range(len(posiciones[0]['league']['standings'][0])):
-                print(posiciones[0]['league']['standings'][0][equipo]['rank'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['team']['name'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['points'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['played'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['win'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['draw'],"-"*3,posiciones[0]['league']['standings'][0][equipo]['all']['lose'])
-    else:
-        print("Error en la solicitud:", respuesta.status_code)
-
-
-def obtener_jugadores()->dict:
-    url = "https://v3.football.api-sports.io/players"
-    params = {
-        "league": "128",
-        "season": 2023
-    }
-    headers = {
-        'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
-    }
-    
-    # solicito equipo indicado por parametro
-    respuesta = requests.get(url, params=params, headers=headers)
-    jugadores={}
-    # verifico estado de la solicitud
-    if respuesta.status_code == 200: #si fue exitosa
-        data = respuesta.json()
-        jugadores = data['response']
-    else:
-        print("Error en la solicitud:", respuesta.status_code)
-    return jugadores
-
-def obtener_estadisticas_equipo(id_equipo)->dict:
-    url = "https://v3.football.api-sports.io/teams/statistics"
-    params = {
-        "league": "128",
-        "season": 2023,
-        "team": id_equipo
-    }
-    headers = {
-        'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "b954d11d14d63f5c19f0eeb8953724c3"
-    }
-    # solicito estadisticas de equipo indicado por parametro
-    respuesta = requests.get(url, params=params, headers=headers)
-    estadisticas_equipo:dict={}
-    # verifico estado de la solicitud
-    if respuesta.status_code == 200: #si fue exitosa
-        data = respuesta.json()
-        estadisticas_equipo = data['response']
-    else:
-        print("Error en la solicitud:", respuesta.status_code)
-    return estadisticas_equipo
-
-
-def obtener_fixtures()->dict:
-    url = "https://v3.football.api-sports.io/fixtures"
-    params = {
-        "league": "128",
-        "season": 2023
-    }
-
-    headers = {
-        'x-rapidapi-host': "v3.football.api-sports.io",
-        'x-rapidapi-key': "780851d3b9e161c8b5dddd46f9e9da9a"
-    }
-    
-    # solicito equipo indicado por parametro
-    respuesta = requests.get(url, params=params, headers=headers)
-    # verifico estado de la solicitud
-    fixture={}
-    if respuesta.status_code == 200: #si fue exitosa
-        data = respuesta.json()
-        fixture = data['response']
-        for partido in fixture:
-            partido['teams']['home']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
-            partido['teams']['away']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
-    else:
-        print("Error en la solicitud:", respuesta.status_code)
-    return fixture
 
 def validar_fecha()->int:
     fecha_invalida=True
@@ -480,9 +372,17 @@ def main():
     print("Bienvenidx al portal de apuestas Jugarsela")
     usuarios:dict=obtener_usuarios() #del archivo usuarios.csv
     transacciones:dict=obtener_transacciones() #del archivo transacciones.csv
-    fixtures:dict= obtener_fixtures() #de la api
-    equipos:dict= obtener_equipos() #de la api
-    jugadores:dict=obtener_jugadores() #de la api    
+
+    #cargo mis estructuras
+    params = {"league": "128","country": "Argentina","season": 2023}
+    equipos:dict= consultar_api("/teams", params)
+    params = {"league": "128","season": 2023}
+    fixtures:dict= consultar_api("/fixtures", params)
+    for partido in fixtures:
+            partido['teams']['home']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
+            partido['teams']['away']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
+    params = {"league": "128","season": 2023}
+    jugadores:dict=consultar_api("/players", params)
 
     finalizar = False #True si el usuario decide salir
     id_usuario:str= 0 #Si hubo problemas al identificarse
@@ -515,8 +415,20 @@ def main():
 
             elif opcion == 2:
                 print("Ingrese la temporada (el anio) de la cual desea ver la tabla de posiciones(junto a otras stats): ")
-                temporada:int= input()
-                mostrar_tabla_posiciones(temporada)
+                temporada:int= ingresar_entero(2015, 2023)
+                if(temporada!=2020):
+                    params = {
+                        "league": "128",
+                        "season": temporada
+                    }
+                    posiciones=consultar_api("/standings",params)
+                    print("Posicion, Equipo, Pts")
+                    if(len(posiciones)>0):
+                        for equipo in range(len(posiciones[0]['league']['standings'][0])):
+                            datos_equipo=posiciones[0]['league']['standings'][0][equipo]
+                            print(datos_equipo['rank'],",",datos_equipo['team']['name'],",",datos_equipo['points'])
+                else:
+                    print("Imposible mostrar tabla de posiciones para el 2020")
 
             elif opcion == 3:
                 print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
@@ -534,7 +446,12 @@ def main():
                     print("Ingrese nombre del equipo que desee ver goles por minutos")
                     equipo_elegido=input()
                     id= obtener_id_equipo(equipos, equipo_elegido)
-                estadisticas= obtener_estadisticas_equipo(id)
+                params = {
+                    "league": "128",
+                    "season": 2023,
+                    "team": id
+                }
+                estadisticas= consultar_api("/statistics",params)
                 goles_por_minuto=estadisticas['goals']['minute']
                 print(goles_por_minuto)
 
