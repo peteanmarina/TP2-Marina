@@ -167,7 +167,7 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
     print(f"Equipo visitante:", informacion_partidos[fecha][1],"paga: ",informacion_partidos[fecha][3],"veces de lo apostado")
 
     print("Ingrese el monto a apostar")
-    monto_a_apostar= ingresar_float()
+    monto_a_apostar= ingresar_float(1,999999)
     dinero_suficiente= verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto)
 
     if (dinero_suficiente):
@@ -284,7 +284,11 @@ def mostrar_plantel(id_equipo:int, jugadores:dict)->None:
     #TODO revisar si imprime todos, y no solo los que tienen el equipo en el primer lugar
     print("Plantel del equipo elegido:")
     for jugador in jugadores:
+        print("Jugador")
+        print(jugador)
         for estadistica in range(len(jugador['statistics'])):
+            print("jugador estadistica")
+            print(jugador['statistics'][estadistica])
             if jugador['statistics'][estadistica]['team']['id'] == id_equipo:
                 print(jugador['player']['name'])
 
@@ -450,10 +454,10 @@ def main():
                     "season": 2023,
                     "team": id
                 }
-                estadisticas= consultar_api("/statistics",params)
-                print(estadisticas)
-                #goles_por_minuto=estadisticas['goals']['minute']
-                #print(goles_por_minuto)
+                estadisticas= consultar_api("/teams/statistics",params)
+                goles_por_minuto=estadisticas['goals']['for']['minute']
+
+                print(goles_por_minuto)
 
             elif opcion == 5:
                 print("Elegiste cargar dinero")
@@ -461,6 +465,9 @@ def main():
                 monto=ingresar_entero(0,99999)
                 if(monto!=0):
                     modificar_dinero_usuario(id_usuario, monto, "Sumar", usuarios)
+                    print("Ingrese fecha actual")
+                    fecha_actual=validar_fecha()
+                    guardar_transaccion_en_diccionario(id_usuario,transacciones,fecha_actual)
 
             elif opcion == 6: 
                 cantidad_max=0
@@ -471,20 +478,21 @@ def main():
                 print(f"El usuario que más dinero apostó hasta la fecha es:",usuario_mas_aposto)
 
             elif opcion == 7:
-                print ("Usuario que más gano:")
                 ganado_por_usuario={} #diccionario que tiene de clave, el id_usuario y de dato la cantidad ganada 
                 for usuario in transacciones:
                     ganado_por_usuario[usuario]=0
                     for transaccion in transacciones[usuario]:
-                        print(transaccion)
                         if(transaccion[1]=="Gana"):
                             ganado_por_usuario[usuario]+=transaccion[2]
                 max=0
                 usuario_mas_gano = ""
+                max_ganancia=0
+                print(ganado_por_usuario)
                 for usuario, ganancia in ganado_por_usuario.items():
                     if ganancia > max_ganancia:
                         max_ganancia = ganancia
                         usuario_mas_gano = usuario
+                print("El usuario que más ganó fue:",usuarios[usuario_mas_gano]['nombre']," (mail",usuario_mas_gano,") y ganó un total de:",max_ganancia)
 
             elif opcion == 8:
                 print("Bienvenidx al sistema de apuestas")
