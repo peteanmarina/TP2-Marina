@@ -284,8 +284,8 @@ def mostrar_plantel(id_equipo:int, jugadores:dict)->None:
     #TODO revisar si imprime todos, y no solo los que tienen el equipo en el primer lugar
     print("Plantel del equipo elegido:")
     for jugador in jugadores:
-        for estadistica in jugador['statistics']:
-            if estadistica['team']['id'] == id_equipo:
+        for estadistica in range(len(jugador['statistics'])):
+            if jugador['statistics'][estadistica]['team']['id'] == id_equipo:
                 print(jugador['player']['name'])
 
 def consultar_api(endpoint:str, params:dict)->dict:
@@ -344,16 +344,15 @@ def validar_fecha()->int:
 
         if ((len(partes) != 3)) or ((len(partes[0]) != 4) or (len(partes[1]) != 2) or (len(partes[2]) != 2)):
             fecha_invalida=True
-
-        if ((not partes[0].isnumeric()) or (not partes[1].isnumeric()) or (not partes[2].isnumeric())):
-            fecha_invalida=True
         else:
-            anio = int(partes[0])
-            mes = int(partes[1])
-            dia = int(partes[2])
-            if ((anio < 1) or (mes < 1) or (mes > 12) or (dia < 1) or (dia > 31)):
+            if ((not partes[0].isnumeric()) or (not partes[1].isnumeric()) or (not partes[2].isnumeric())):
                 fecha_invalida=True
-
+            else:
+                anio = int(partes[0])
+                mes = int(partes[1])
+                dia = int(partes[2])
+                if ((anio < 1) or (mes < 1) or (mes > 12) or (dia < 1) or (dia > 31)):
+                    fecha_invalida=True
     return fecha
 
 def mostrar_equipos(equipos):
@@ -452,8 +451,9 @@ def main():
                     "team": id
                 }
                 estadisticas= consultar_api("/statistics",params)
-                goles_por_minuto=estadisticas['goals']['minute']
-                print(goles_por_minuto)
+                print(estadisticas)
+                #goles_por_minuto=estadisticas['goals']['minute']
+                #print(goles_por_minuto)
 
             elif opcion == 5:
                 print("Elegiste cargar dinero")
@@ -463,18 +463,29 @@ def main():
                     modificar_dinero_usuario(id_usuario, monto, "Sumar", usuarios)
 
             elif opcion == 6: 
-                print ("Usuario que más apostó:")
                 cantidad_max=0
                 for usuario in usuarios:
-                    if usuario['cantidad_total_apostada']>cantidad_max:
-                        cantidad_max=usuario['cantidad_total_apostada']
-                        usuario_mas_aposto=usuario['nombre']
-                print(f"El usuario que más dinero apostó hasta la fecha es ",usuario_mas_aposto)
+                    if usuarios[usuario]['cantidad_total_apostada']>cantidad_max:
+                        cantidad_max=usuarios[usuario]['cantidad_total_apostada']
+                        usuario_mas_aposto=usuarios[usuario]['nombre']
+                print(f"El usuario que más dinero apostó hasta la fecha es:",usuario_mas_aposto)
 
             elif opcion == 7:
                 print ("Usuario que más gano:")
+                ganado_por_usuario={} #diccionario que tiene de clave, el id_usuario y de dato la cantidad ganada 
                 for usuario in transacciones:
-                    pass
+                    ganado_por_usuario[usuario]=0
+                    for transaccion in transacciones[usuario]:
+                        print(transaccion)
+                        if(transaccion[1]=="Gana"):
+                            ganado_por_usuario[usuario]+=transaccion[2]
+                max=0
+                usuario_mas_gano = ""
+                for usuario, ganancia in ganado_por_usuario.items():
+                    if ganancia > max_ganancia:
+                        max_ganancia = ganancia
+                        usuario_mas_gano = usuario
+
             elif opcion == 8:
                 print("Bienvenidx al sistema de apuestas")
                 apostar(equipos, fixtures, id_usuario, usuarios, transacciones)
