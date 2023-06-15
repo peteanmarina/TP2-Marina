@@ -299,31 +299,12 @@ def consultar_api(endpoint:str, params:dict)->dict:
         resultado = requests.get(url, params=params, headers=headers)
     except:
         print("Error al conectarse con el servidor")
-    
-    respuesta = []
-    pagina = 1
-    data = resultado.json()
-    paginas = data['paging']['total']
-    continuar = True
-
     # verifico estado de la solicitud
     if resultado.status_code == 200: #si fue exitosa
-        if(paginas==1):
-            continuar=False
-        else:
-            params.setdefault("page", pagina)
-        while continuar:
-            resultado = requests.get(url, params=params, headers=headers)
-            data = resultado.json()
-            respuesta.extend(data.get('response', []))
-            if pagina >= paginas:
-                continuar = False
-            else:
-                pagina += 1
-                params['page'] = pagina
+        data = resultado.json()
+        respuesta = data['response']        
     else:
-        print("Error en la solicitud", resultado.status_code)
-
+        print("Error en la solicitud:", resultado.status_code)
     return respuesta
 
 def mostrar_informacion_estadio_y_escudo(id_equipo, equipos):
@@ -400,7 +381,7 @@ def main():
             partido['teams']['home']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
             partido['teams']['away']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
     params = {"league": "128","season": 2023}
-    #jugadores:dict=consultar_api("/players", params)
+    #jugadores:dict=consultar_api("/players", params) #TODO ver como me dicen de hacerlo
     finalizar = False #True si el usuario decide salir
     id_usuario:str= 0 #Si hubo problemas al identificarse
 
@@ -428,7 +409,7 @@ def main():
                     print("Ingrese nombre del equipo que desee ver el plantel")
                     equipo_elegido=input()
                     id= obtener_id_equipo(equipos, equipo_elegido)
-                mostrar_plantel(id, jugadores)
+                #mostrar_plantel(id, jugadores) #TODO ver como me dicen que lo haga
 
             elif opcion == 2:
                 print("Ingrese la temporada (el anio) de la cual desea ver la tabla de posiciones(junto a otras stats): ")
