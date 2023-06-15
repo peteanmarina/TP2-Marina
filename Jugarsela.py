@@ -3,7 +3,6 @@ import requests
 from passlib.context import CryptContext
 import csv
 import random
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import tempfile
@@ -14,21 +13,20 @@ API= "v3.football.api-sports.io"
 def ingresar_entero(min: int, max: int)->int:
     #Funcion que recibe un numero mínimo y uno máximo y permite al usuario ingresar valores hasta que uno sea entero y se encuentre en el rango númerico indicado por esos números
     #Devuelve un entero, ingresado por el usuario
-    numero=input()
+    numero:str=input()
     while (not numero.isdigit() or int(numero)>max or int(numero)<min):
         #Si la primera condicion se cumple, no lee las que siguen y por eso ya puedo convertirlo a int
         print(f"ERROR. Intente de nuevo, recuerde que debe ser un numero entero entre {min} y {max}")
         numero=input()
-        
     return int(numero)
 
-def ingresar_float(min: float, max: float):
+def ingresar_float(min: float, max: float) ->float:
     #Funcion que recibe un numero float mínimo y uno máximo y permite al usuario ingresar valores hasta que uno sea float y se encuentre en el rango númerico indicado por esos números
     #Devuelve un float, ingresado por el usuario
     numero:str=""
     while(numero==""):
         try:
-            numero=input()
+            numero:=input()
             numero= float(numero)
         except:
             print("Intente nuevamente")
@@ -39,43 +37,47 @@ def obtener_usuarios()-> dict:
     #Se encarga de guardar en un diccionario la información del archivo de usuarios
     usuarios:dict = {}
     archivo_usuarios:str = 'usuarios.csv'
-    
-    if os.path.isfile(archivo_usuarios): # si el archivo existe
-        with open(archivo_usuarios, 'r', encoding='UTF-8') as archivo_csv: # modo lectura
-            csv_reader = csv.reader(archivo_csv, delimiter=',')
-            next(csv_reader)  # Leer la primera línea (encabezado)
-            for row in csv_reader:
-                correo = row[0]
-                usuarios[correo] = {
-                    'nombre': row[1],
-                    'contrasena': row[2],
-                    'cantidad_total_apostada': float(row[3]),
-                    'fecha_ultima_apuesta': row[4],
-                    'dinero': float(row[5])
-                }
+    try:
+        if os.path.isfile(archivo_usuarios): # si el archivo existe
+            with open(archivo_usuarios, 'r', encoding='UTF-8') as archivo_csv: # modo lectura
+                csv_reader = csv.reader(archivo_csv, delimiter=',')
+                next(csv_reader)  # Leer la primera línea (encabezado)
+                for row in csv_reader:
+                    correo = row[0]
+                    usuarios[correo] = {
+                        'nombre': row[1],
+                        'contrasena': row[2],
+                        'cantidad_total_apostada': float(row[3]),
+                        'fecha_ultima_apuesta': row[4],
+                        'dinero': float(row[5])
+                    }
+    except:
+        print("Error al abrir o leer archivo de usuarios")
     return usuarios
 
 def guardar_usuarios(usuarios:dict)-> None:
     #Reescribe el archivo usuarios con el contenido actualizado presente en el diccionario usuarios
-    with open('usuarios.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
-        csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-        csv_writer.writerow(['correo', 'nombre', 'contrasena', 'cantidad_total_apostada', 'fecha_ultima_apuesta', 'dinero'])  # Escribir el encabezado
-        
-        for correo, datos in usuarios.items():
-            csv_writer.writerow([
-                correo,
-                datos['nombre'],
-                datos['contrasena'],
-                datos['cantidad_total_apostada'],
-                datos['fecha_ultima_apuesta'],
-                datos['dinero']
-            ])
+    try:
+        with open('usuarios.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
+            csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+            csv_writer.writerow(['correo', 'nombre', 'contrasena', 'cantidad_total_apostada', 'fecha_ultima_apuesta', 'dinero'])  # Escribir el encabezado
+            
+            for correo, datos in usuarios.items():
+                csv_writer.writerow([
+                    correo,
+                    datos['nombre'],
+                    datos['contrasena'],
+                    datos['cantidad_total_apostada'],
+                    datos['fecha_ultima_apuesta'],
+                    datos['dinero']
+                ])
+    except:
+        print("Error al abrir o escribir archivo usuarios")
 
 def registrar_usuario(usuarios:dict)-> str:
     #permite guardar un nuevo usuario en el diccionario de usuarios, siempre y cuando el main no exista en el mismo
     #devuelve 0 si el mail ya existe
-    myctx = CryptContext(schemes=["sha256_crypt", "md5_crypt"])
-
+    myctx: CryptContext= CryptContext(schemes=["sha256_crypt", "md5_crypt"])
     correo:str = input("Ingrese correo electrónico: ")
     if(correo in usuarios):
         print("Ya existe un usuario registrado con ese correo")
@@ -83,29 +85,28 @@ def registrar_usuario(usuarios:dict)-> str:
     else:
         nombre:str = input("Ingrese su nombre de usuario:")
         contrasena:str = myctx.hash(input("Ingrese su contraseña: "))
-        dinero:float = float(input("Ingrese el dinero disponible:"))
         usuarios[correo] = {
             'nombre': nombre,
             'contrasena': contrasena,
-            'cantidad_total_apostada': 0, #apostada hasta el momento
-            'fecha_ultima_apuesta': None, #de la ultima apuesta
-            'dinero': dinero
+            'cantidad_total_apostada': 0, #dinero total apostado hasta el momento
+            'fecha_ultima_apuesta': None,
+            'dinero': 0 #actual del usuario
         }
-        guardar_usuarios(usuarios) #se asienta en el archivo
-        print("Registro realizado")
-
+        guardar_usuarios(usuarios) #se guarda en el archivo
+        print("Registro realizado, para apostar recuerde cargar dinero por primera vez")
+        
     return correo 
 
 def iniciar_sesion(usuarios:dict) -> str:
     #recibe el diccionario de usuarios y permite que un usuario se identifique, siempre que exista y ingrese su contraseña correctamente
-    #devuelve 0 si
+    #devuelve 0 si no se pudo identificar (contraseña incorrecta)
     myctx = CryptContext(schemes=["sha256_crypt", "md5_crypt"])
-    myctx.default_scheme()
+    myctx.default_scheme() #esquema para cifrado por defecto
     correo:str = input("Ingrese su correo electrónico:")
     contrasena:str = input("Ingrese su contraseña: ")
 
     if correo in usuarios:
-        if(myctx.verify(contrasena, usuarios[correo]['contrasena'])):
+        if(myctx.verify(contrasena, usuarios[correo]['contrasena'])): #myctx.verify compara la contraseña ingresada, con la guardada que se encuentra cifrada
             print("Inicio de sesión realizado")
         else:
             print("Contraseña incorrecta")
@@ -115,8 +116,11 @@ def iniciar_sesion(usuarios:dict) -> str:
         correo=0
     return correo
 
-def mostrar_menu():
+def mostrar_menu()-> None:
+    #Funcion que muestra lista de opciones
+    print("_"*50)
     print("Ingrese el número correspondiente a la opción que desee:")
+    print("_"*50)
     print("0) Salir")
     print("1) Mostrar el plantel completo de un equipo ingresado")
     print("2) Mostrar la tabla de posiciones de la Liga profesional de una temporada")
@@ -126,11 +130,16 @@ def mostrar_menu():
     print("6) Usuario que más apostó") 
     print("7) Usuario que más gano")
     print("8) Apostar")
+    print("_"*50)
     
-def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transacciones:dict):
+def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transacciones:dict)->None:
+    #Funcion que recibe diccionarios de: equipos, partidos, usuarios y transacciones, además del mail del usuario que actualmente usa el programa
+    #Permite al usuario apostar, y al finalizar en el diccionario de usuarios y de transacciones apareceran los cambios o ingresos correspondientes
+    print("_"*50)
     print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
     mostrar_equipos(equipos)
-    print("Ingrese nombre de un equipo para ver un listado del fixture")
+    print("_"*50)
+    print("Ingrese nombre de un equipo para ver un listado de los partidos que jugará el mismo")
     equipo_elegido= input()
     id_equipo= obtener_id_equipo(equipos, equipo_elegido)
     informacion_partidos:dict={}
@@ -143,13 +152,15 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
             pago_visitante= partido['teams']['away']['cantidad_veces_pago']
             fecha,hora = partido["fixture"]["date"].split('T')
             informacion_partidos[fecha]=[local, visitante, pago_local, pago_visitante, id_partido]
-            print()
-            print(f"Para la fecha: ",fecha)
+            print("_"*50)
+            print(f"Fecha: ",fecha)
             print(f"Equipo local:", local)
             print(f"Equipo visitante:", visitante)
-            
+            print("_"*50)
+    
     print("Ingrese la fecha del partido para el que quiere apostar, YYYY-MM-DD")
     fecha= validar_fecha()
+    print("_"*50)
     params = {
         "fixture":informacion_partidos[fecha][4]
     }
@@ -169,50 +180,67 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
 
     print("Ingrese el monto a apostar")
     monto_a_apostar= ingresar_float(1,999999)
-    dinero_suficiente= verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto_a_apostar)
+    print("_"*50)
+    dinero_suficiente= verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto_a_apostar, usuarios)
 
     if (dinero_suficiente):
-        print("Ahora le solicitaremos la fecha del día de hoy")
+        print("Le solicitaremos la fecha del día de hoy para finalizar la transaccion")
         fecha_actual=validar_fecha()
-        print("Descontando dinero...")
+        print("Descontando dinero... Por favor aguarde")
         registrar_apuesta_en_usuario(id_usuario, monto_a_apostar, fecha_actual, usuarios) #actualiza fecha ultima apuesta y suma monto al total apostado
-        modificar_dinero_usuario(id_usuario, monto_a_apostar, "Restar")
+        modificar_dinero_usuario(id_usuario, monto_a_apostar, "Resta")
 
-        print("1)Gana Local")
-        print("2)Empate")
-        print("3)Gana Visitante")
+        print("Momento de apostar, buena suerte!")
+        print("_"*50)
+        print("Ingrese el número de apuesta que desee hacer")
 
-        respuesta=ingresar_entero(1,3) #apuesta
+        posibilidades=["Gana Local","Empate","Gana Visitante"]
+
+        print(f"1)",posibilidades[0])
+        print(f"2)",posibilidades[1])
+        print(f"3)",posibilidades[2])
+        
+        respuesta=int(ingresar_entero(1,3)) #apuesta
+        print("_"*50)
+        print()
+        print("Se juega el partido...")
+        print()
+        print("_"*50)
 
         resultado_simulado=random.randint(1, 3) #resultado simulado del partido
-        
+        print(f"Resultado del partido: ", posibilidades[(int(resultado_simulado)-1)])
+        print(f"Tu apuesta: ", posibilidades[(int(respuesta)-1)])
+        print("_"*50)
         if(resultado_simulado==respuesta):#gana
-
+            print("Felicidades!")
             if(resultado_simulado==1):#apuesta gana local y gana local
-                monto=monto_a_apostar+(informacion_partidos[fecha][2]*monto)
-
+                monto=monto_a_apostar+(informacion_partidos[fecha][2]*monto_a_apostar)
             elif(resultado_simulado==2):#apuesta empate, pagaría la mitad
-                monto=monto_a_apostar+(monto/2)
-
+                monto=monto_a_apostar+(monto_a_apostar/2)
             elif(resultado_simulado==3):#apuesta gana visitante
-                monto=monto_a_apostar+(informacion_partidos[fecha][3]*monto)
-            ganancia_total=monto_a_apostar-monto
+                monto=monto_a_apostar+(informacion_partidos[fecha][3]*monto_a_apostar)
+            ganancia_total=monto-monto_a_apostar
+            print(f"Ganaste un total de ", ganancia_total, "pesos y se te devolverá el dinero apostado")
             #la transaccion que guardo contempla la devolucion del dinero + lo que gana como tal
             guardar_transaccion_en_diccionario(id_usuario, transacciones, fecha_actual, "Gana", ganancia_total)
-            modificar_dinero_usuario(id_usuario, monto, "Sumar")
+            modificar_dinero_usuario(id_usuario, monto, "Suma")
 
         else: #pierde
             print(f"Perdiste tus ",monto_a_apostar,"pesos, mejor suerte la próxima")
+            guardar_transaccion_en_diccionario(id_usuario, transacciones, fecha_actual, "Pierde", monto_a_apostar)
+
     else:
-        print("Lamento informarle que no tiene dinero suficiente para realizar esta apuesta")
+        print("Lamentamos informarle que no tiene dinero suficiente para realizar esta apuesta")
 
-def registrar_apuesta_en_usuario(id_usuario, monto, fecha, usuarios):
-    
-    usuarios[id_usuario]['cantidad_total_apostada']+=monto
-    usuarios[id_usuario]['fecha_ultima_apuesta']+=monto
-
+def registrar_apuesta_en_usuario(id_usuario:str, monto:float, fecha:str, usuarios:dict)->None:
+    #Recibe id_usuario, monto a apostar, fecha de la apuesta y el diccionario de usuarios
+    #Modifica el diccionario de usuarios, sumando la nueva apuesta a la cantidad apostada y actualizando la fecha de la ultima apuesta
+    usuarios[id_usuario]['cantidad_total_apostada']=(float(usuarios[id_usuario]['cantidad_total_apostada']))+float(monto)
+    usuarios[id_usuario]['fecha_ultima_apuesta']+=fecha
 
 def obtener_transacciones()->dict:
+    #No recibe nada por parámetro
+    #Devuelve diccionario con el contenido del archivo transacciones. clave: id_usuario, datos: cada transaccion
     transacciones = {}
     archivo_transacciones = 'transacciones.csv'
     usuarios=[]
@@ -225,17 +253,17 @@ def obtener_transacciones()->dict:
                 fecha = fila[1]
                 tipo = fila[2]
                 importe = float(fila[3])
-
                 if id_usuario not in usuarios:
                     usuarios.append(id_usuario)
                     transacciones[id_usuario] = [[fecha, tipo, importe]]
                 else:
                     transacciones[id_usuario].append([fecha, tipo, importe])
-
     return transacciones
 
-def guardar_transaccion_en_diccionario(id_usuario:str, transacciones:dict, fecha_actual:str, tipo:str, monto:float):
-    transaccion = [fecha_actual, tipo, monto]
+def guardar_transaccion_en_diccionario(id_usuario:str, transacciones:dict, fecha_actual:str, tipo:str, monto:float)->None:
+    #Recibe id_usuario, diccionario transacciones, fecha actual, tipo de transaccion y monto de la misma
+    #Guarda la transaccion en el diccionario de transacciones
+    transaccion:list = [fecha_actual, tipo, monto]
     if id_usuario in transacciones:
         # usuario ya tiene transacciones
         transacciones[id_usuario].append(transaccion)
@@ -243,7 +271,9 @@ def guardar_transaccion_en_diccionario(id_usuario:str, transacciones:dict, fecha
         # usuario no tiene transacciones
         transacciones[id_usuario] = [transaccion]
 
-def guardar_transacciones(transacciones):
+def guardar_transacciones(transacciones:dict)->None:
+    #Recibe diccionario de transacciones
+    #Reescribe el archivo de transacciones con el contenido del diccionario de transacciones
     with open('transacciones.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
         csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
         csv_writer.writerow(['id_usuario', 'fecha', 'tipo', 'importe'])  # escribo el encabezado    
@@ -256,20 +286,22 @@ def guardar_transacciones(transacciones):
                     transaccion[2] #importe
                 ])
 
-def modificar_dinero_usuario(id_usuario:str, monto:float, operación:str, usuarios:dict):
-    
+def modificar_dinero_usuario(id_usuario:str, monto:float, operación:str, usuarios:dict)->None:
+    #Recibe id_usuario, monto a modificar, operacion a realizar (suma o resta) y el diccionario de usuarios
+    #Agrega o quita dinero al usuario en el diccionario de usuarios y lo informa por consola
     if id_usuario in usuarios:
         dinero_en_cuenta = float(usuarios[id_usuario]['dinero'])
-        if(operación=="Sumar"):
+        if(operación=="Suma"):
             usuarios[id_usuario]["dinero"] = dinero_en_cuenta + float(monto)
-        elif(operación=="Restar"):
+        elif(operación=="Resta"):
             usuarios[id_usuario]["dinero"] = dinero_en_cuenta - float(monto)
         else:
             print("Error al reconocer operación")
-
     print (f"Ahora posee {usuarios[id_usuario]['dinero']} disponible en su cuenta. ")
 
-def verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto, usuarios:dict)->bool:
+def verificar_si_usuario_tiene_dinero_suficiente(id_usuario:str, monto:float, usuarios:dict)->bool:
+    #Recibe id_usuario, monto del que se quiere verificar si dispone o no y el diccionario de usuarios
+    #Devuelve True si tiene igual o más de ese monto, False en caso contrario
     dinero_suficiente= False
     if id_usuario in usuarios:
         dinero = float(usuarios[id_usuario]['dinero'])
@@ -278,11 +310,14 @@ def verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto, usuarios:dic
     return dinero_suficiente
 
 def obtener_cantidad_de_veces()->int:
+    #No recibe nada por parámetro
+    #Funcion que devuelve un numero random entero entre el 1 y el 4 inclusive, que representa la cantidad de veces base que se le pagara lo que apostó al usuario en caso de ganar
     cantidad_veces=random.randint(1, 4)
     return cantidad_veces
 
 def mostrar_plantel(id_equipo:int, jugadores:dict)->None: 
-    #TODO revisar si imprime todos, y no solo los que tienen el equipo en el primer lugar
+    #Recibe id_equipo y diccionario de jugadores
+    #Muestra el plantel de jugadores de un equipo de la liga argentina en 2023
     print("Plantel del equipo elegido:")
     for jugador in jugadores:
         for estadistica in range(len(jugador['statistics'])):
@@ -290,9 +325,11 @@ def mostrar_plantel(id_equipo:int, jugadores:dict)->None:
                 print(jugador['player']['name'])
 
 def consultar_api(endpoint:str, params:dict)->dict:
+    #Funcion que recibe el endpoint que se desea consultar a la api, y los parametros de dicha consulta
+    #Devuelve la respuesta de dicha consulta
     try:
-        url = URL + endpoint
-        headers = {
+        url:str = URL + endpoint
+        headers:dict = {
             'x-rapidapi-host': API,
             'x-rapidapi-key': CLAVE
         }
@@ -302,12 +339,33 @@ def consultar_api(endpoint:str, params:dict)->dict:
     # verifico estado de la solicitud
     if resultado.status_code == 200: #si fue exitosa
         data = resultado.json()
-        respuesta = data['response']        
+        respuesta = data['response']  
+        cant_paginas = data['paging']['total']
+        if(cant_paginas==1):
+            continuar=False
+        else:
+            cant_paginas= 2 #unicamente para no hacer muchas consultas a la api
+            continuar=True
+            params.setdefault("page", 1) #agrego el parametro "numero de pagina"
+            while continuar:
+                try:
+                    resultado = requests.get(url, params=params, headers=headers)
+                    data = resultado.json()
+                    respuesta.extend(data.get('response', []))
+                except:
+                    print("Error al conectarse con el servidor")
+            if pagina == cant_paginas:
+                continuar = False
+            else:
+                pagina += 1
+                params['page'] = pagina
     else:
         print("Error en la solicitud:", resultado.status_code)
     return respuesta
-
-def mostrar_informacion_estadio_y_escudo(id_equipo, equipos):
+      
+def mostrar_informacion_estadio_y_escudo(id_equipo:int, equipos:dict)->None:
+    #Recibe id de un equipo y el diccionario de equipos
+    #Muestra información del estado y abre imagen del escudo del equipo ingresado
     estadio:dict={}
     for equipo in equipos:
         if(equipo['team']["id"]==id_equipo):
@@ -320,20 +378,20 @@ def mostrar_informacion_estadio_y_escudo(id_equipo, equipos):
     print("Capacidad:", estadio['capacity'])
     print("Superficie:", estadio['surface'])
 
-    enlace_imagen = equipo_elegido['logo']
+    enlace_imagen:str = equipo_elegido['logo']
     response = requests.get(enlace_imagen)
     # guardo la imagen temporalmente
-    with tempfile.NamedTemporaryFile(delete=False) as imagen_temporal:
+    with tempfile.NamedTemporaryFile(delete=False) as imagen_temporal: #cargo la imagen
         imagen_temporal.write(response.content)
         nombre_imagen_temporal = imagen_temporal.name
-    # Cargar la imagen desde el archivo temporal
     imagen = mpimg.imread(nombre_imagen_temporal)
-    # Mostrar la imagen
     plt.imshow(imagen)
-    plt.show()
-    os.remove(nombre_imagen_temporal)
+    plt.show() #muestro imagen
+    os.remove(nombre_imagen_temporal) #borro imagen
 
 def validar_fecha()->int:
+    #No recibe nada por parametro
+    #Devuelve una fecha validada, formato YYYY-MM-DD
     fecha_invalida=True
     fecha=0
     while(fecha_invalida):
@@ -355,20 +413,28 @@ def validar_fecha()->int:
                     fecha_invalida=True
     return fecha
 
-def mostrar_equipos(equipos):
+def mostrar_equipos(equipos:dict)->None:
+    #Recibe diccionario de equipos
+    #Muestra los nombres de los equipos del diccionario
     for equipo in equipos:
         print(equipo['team']['name'])
 
-def obtener_id_equipo(equipos, equipo_elegido)->str:
-    #devuelve 0 si no se encuentra
+def obtener_id_equipo(equipos:dict, equipo_elegido:str)->int:
+    #Recibe diccionario de equipos y un nombre de equipo
+    #Devuelve el id del equipo, 0 si no se encuentra el id_equipo en equipos
     id=0
     for equipo in equipos:
         if(equipo_elegido) == (equipo['team']['name']):
             id=equipo['team']['id']
     return id
 
-def main():   
-    print("Bienvenidx al portal de apuestas Jugarsela")
+def main()->None:
+    #Funcion principal del programa
+    print("_"*50)
+    print("La adicción al juego no es un vicio, sino una peligrosa enfermedad")
+    print("_"*50)
+    print()
+    print("Bienvenidx al portal de apuestas Jugarsela, Recuerde que")
     usuarios:dict=obtener_usuarios() #del archivo usuarios.csv
     transacciones:dict=obtener_transacciones() #del archivo transacciones.csv
 
@@ -381,7 +447,7 @@ def main():
             partido['teams']['home']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
             partido['teams']['away']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
     params = {"league": "128","season": 2023}
-    #jugadores:dict=consultar_api("/players", params) #TODO ver como me dicen de hacerlo
+    jugadores:dict=consultar_api("/players", params)
     finalizar = False #True si el usuario decide salir
     id_usuario:str= 0 #Si hubo problemas al identificarse
 
@@ -450,16 +516,27 @@ def main():
                     "team": id
                 }
                 estadisticas= consultar_api("/teams/statistics",params)
+                print(estadisticas)
                 goles_por_minuto=estadisticas['goals']['for']['minute']
-
-                print(goles_por_minuto)
+                intervalos_de_tiempo = goles_por_minuto.keys()
+                goles = []
+                for intervalo in goles_por_minuto.values():
+                    if intervalo['total'] is None:
+                        intervalo['total'] = 0
+                    cantidad_goles = intervalo['total']
+                    goles.append(cantidad_goles)
+                plt.bar(intervalos_de_tiempo, goles)
+                plt.xlabel('Minutos')
+                plt.ylabel('Cantidad de goles')
+                plt.title('Gráfico de goles por intervalos de minutos')
+                plt.show()
 
             elif opcion == 5:
                 print("Elegiste cargar dinero")
                 print("Ingrese monto, para cancelar ingrese 0")
                 monto=ingresar_entero(0,99999)
                 if(monto!=0):
-                    modificar_dinero_usuario(id_usuario, monto, "Sumar", usuarios)
+                    modificar_dinero_usuario(id_usuario, monto, "Suma", usuarios)
                     print("Ingrese fecha actual")
                     fecha_actual=validar_fecha()
                     guardar_transaccion_en_diccionario(id_usuario,transacciones,fecha_actual)
@@ -470,7 +547,7 @@ def main():
                     if usuarios[usuario]['cantidad_total_apostada']>cantidad_max:
                         cantidad_max=usuarios[usuario]['cantidad_total_apostada']
                         usuario_mas_aposto=usuarios[usuario]['nombre']
-                print(f"El usuario que más dinero apostó hasta la fecha es:",usuario_mas_aposto)
+                print(f"El usuario que más dinero apostó hasta la fecha es:",usuario_mas_aposto," y apostó un total de ",cantidad_max," pesos")
 
             elif opcion == 7:
                 ganado_por_usuario={} #diccionario que tiene de clave, el id_usuario y de dato la cantidad ganada 
@@ -482,13 +559,11 @@ def main():
                 max=0
                 usuario_mas_gano = ""
                 max_ganancia=0
-                print(ganado_por_usuario)
                 for usuario, ganancia in ganado_por_usuario.items():
                     if ganancia > max_ganancia:
                         max_ganancia = ganancia
                         usuario_mas_gano = usuario
                 print("El usuario que más ganó fue:",usuarios[usuario_mas_gano]['nombre']," (mail",usuario_mas_gano,") y ganó un total de:",max_ganancia)
-
             elif opcion == 8:
                 print("Bienvenidx al sistema de apuestas")
                 apostar(equipos, fixtures, id_usuario, usuarios, transacciones)
@@ -498,7 +573,7 @@ def main():
             finalizar = True
             guardar_usuarios(usuarios)
             guardar_transacciones(transacciones)
-    
+    print("_"*50)
     print("Hasta pronto")
-
+    print("_"*50)
 main()
