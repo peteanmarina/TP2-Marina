@@ -12,7 +12,7 @@ CLAVE= "b1026f7aeb5dec5f5718843763856307"
 API= "v3.football.api-sports.io"
 
 def ingresar_entero(min: int, max: int)->int:
-    #Funcion que recibe un numero número mínimo y uno máximo y permite al usuario ingresar valores hasta que uno sea entero y se encuentre en el rango númerico indicado por esos números
+    #Funcion que recibe un numero mínimo y uno máximo y permite al usuario ingresar valores hasta que uno sea entero y se encuentre en el rango númerico indicado por esos números
     #Devuelve un entero, ingresado por el usuario
     numero=input()
     while (not numero.isdigit() or int(numero)>max or int(numero)<min):
@@ -23,6 +23,8 @@ def ingresar_entero(min: int, max: int)->int:
     return int(numero)
 
 def ingresar_float(min: float, max: float):
+    #Funcion que recibe un numero float mínimo y uno máximo y permite al usuario ingresar valores hasta que uno sea float y se encuentre en el rango númerico indicado por esos números
+    #Devuelve un float, ingresado por el usuario
     numero:str=""
     while(numero==""):
         try:
@@ -33,7 +35,6 @@ def ingresar_float(min: float, max: float):
             numero=""
     return float(numero)
             
-
 def obtener_usuarios()-> dict:
     #Se encarga de guardar en un diccionario la información del archivo de usuarios
     usuarios:dict = {}
@@ -168,7 +169,7 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
 
     print("Ingrese el monto a apostar")
     monto_a_apostar= ingresar_float(1,999999)
-    dinero_suficiente= verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto)
+    dinero_suficiente= verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto_a_apostar)
 
     if (dinero_suficiente):
         print("Ahora le solicitaremos la fecha del día de hoy")
@@ -284,11 +285,7 @@ def mostrar_plantel(id_equipo:int, jugadores:dict)->None:
     #TODO revisar si imprime todos, y no solo los que tienen el equipo en el primer lugar
     print("Plantel del equipo elegido:")
     for jugador in jugadores:
-        print("Jugador")
-        print(jugador)
         for estadistica in range(len(jugador['statistics'])):
-            print("jugador estadistica")
-            print(jugador['statistics'][estadistica])
             if jugador['statistics'][estadistica]['team']['id'] == id_equipo:
                 print(jugador['player']['name'])
 
@@ -302,13 +299,31 @@ def consultar_api(endpoint:str, params:dict)->dict:
         resultado = requests.get(url, params=params, headers=headers)
     except:
         print("Error al conectarse con el servidor")
+    
+    respuesta = []
+    pagina = 1
+    data = resultado.json()
+    paginas = data['paging']['total']
+    continuar = True
 
     # verifico estado de la solicitud
     if resultado.status_code == 200: #si fue exitosa
-        data = resultado.json()
-        respuesta = data['response']        
+        if(paginas==1):
+            continuar=False
+        else:
+            params.setdefault("page", pagina)
+        while continuar:
+            resultado = requests.get(url, params=params, headers=headers)
+            data = resultado.json()
+            respuesta.extend(data.get('response', []))
+            if pagina >= paginas:
+                continuar = False
+            else:
+                pagina += 1
+                params['page'] = pagina
     else:
-        print("Error en la solicitud:", resultado.status_code)
+        print("Error en la solicitud", resultado.status_code)
+
     return respuesta
 
 def mostrar_informacion_estadio_y_escudo(id_equipo, equipos):
@@ -385,8 +400,7 @@ def main():
             partido['teams']['home']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
             partido['teams']['away']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
     params = {"league": "128","season": 2023}
-    jugadores:dict=consultar_api("/players", params)
-
+    #jugadores:dict=consultar_api("/players", params)
     finalizar = False #True si el usuario decide salir
     id_usuario:str= 0 #Si hubo problemas al identificarse
 
