@@ -8,6 +8,7 @@ import tempfile
 import Utilidades
 import Manejo_Archivos
 
+#ctes
 URL = "https://v3.football.api-sports.io"
 CLAVE= "b1026f7aeb5dec5f5718843763856307"
 API= "v3.football.api-sports.io"
@@ -32,7 +33,6 @@ def registrar_usuario(usuarios:dict)-> str:
         }
         Manejo_Archivos.guardar_usuarios(usuarios) #se guarda en el archivo
         print("Registro realizado, para apostar recuerde cargar dinero por primera vez")
-        
     return correo 
 
 def iniciar_sesion(usuarios:dict) -> str:
@@ -42,7 +42,6 @@ def iniciar_sesion(usuarios:dict) -> str:
     myctx.default_scheme() #esquema para cifrado por defecto
     correo:str = input("Ingrese su correo electrónico:")
     contrasena:str = input("Ingrese su contraseña: ")
-
     if correo in usuarios:
         if(myctx.verify(contrasena, usuarios[correo]['contrasena'])): #myctx.verify compara la contraseña ingresada, con la guardada que se encuentra cifrada
             print("Inicio de sesión realizado")
@@ -77,13 +76,7 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
     print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
     mostrar_equipos(equipos)
     print("-"*80)
-    
-    id_equipo=0
-    while(id_equipo==0):
-        print("Ingrese nombre de un equipo para ver un listado de los partidos que jugará el mismo")
-        equipo_elegido=input()
-        id_equipo= obtener_id_equipo(equipos, equipo_elegido)
-        
+    id_equipo=ingresar_equipo(equipos)
     informacion_partidos:dict={}
     for partido in fixtures:
         if(partido["teams"]["home"]["id"]==id_equipo or partido["teams"]["away"]["id"]==id_equipo):
@@ -220,6 +213,14 @@ def verificar_si_usuario_tiene_dinero_suficiente(id_usuario:str, monto:float, us
             dinero_suficiente= True
     return dinero_suficiente
 
+def ingresar_equipo(equipos: dict)->int:
+    id=0
+    while(id==0):
+        print("Ingrese nombre del equipo que desee ver el plantel")
+        equipo_elegido=input()
+        id= obtener_id_equipo(equipos, equipo_elegido)
+    return id
+
 def consultar_api(endpoint:str, params:dict)->dict:
     respuesta=[]
     try:
@@ -320,11 +321,7 @@ def main()->None:
                 if(equipos != []):
                     print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
                     mostrar_equipos(equipos)
-                    id=0
-                    while(id==0):
-                        print("Ingrese nombre del equipo que desee ver el plantel")
-                        equipo_elegido=input()
-                        id= obtener_id_equipo(equipos, equipo_elegido)
+                    id= ingresar_equipo(equipos)
                     params = {"league": "128","season": 2023, "team": id}
                     jugadores_del_equipo:dict=consultar_api("/players", params)
                     for jugador in jugadores_del_equipo:
@@ -351,22 +348,18 @@ def main()->None:
                 if(equipos!=[]):
                     print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
                     mostrar_equipos(equipos)
-                    id=0
-                    while(id==0):
-                        print("Ingrese nombre del equipo que desee ver la información sobre el estadio y su escudo")
-                        equipo_elegido= input()
-                        id=obtener_id_equipo(equipos, equipo_elegido)
+                    id=ingresar_equipo(equipos)
                     mostrar_informacion_estadio_y_escudo(id, equipos)
                 else:
                     print("Ups, lo sentimos, no podemos satisfacer su petición. Intente de nuevo más tarde")
 
             elif opcion == 4:
                 if(equipos!= []):
-                    id=0
-                    while(id==0):
-                        print("Ingrese nombre del equipo que desee ver goles por minutos")
-                        equipo_elegido=input()
-                        id= obtener_id_equipo(equipos, equipo_elegido)
+                    mostrar_equipos(equipos)
+                    print("-"*80)
+                    print("Ingrese el equipo para el que desee ver goles por minuto")
+                    print("-"*80)
+                    id=ingresar_equipo(equipos)
                     params = {
                         "league": "128",
                         "season": 2023,
