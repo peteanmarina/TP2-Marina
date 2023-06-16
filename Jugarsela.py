@@ -216,7 +216,7 @@ def verificar_si_usuario_tiene_dinero_suficiente(id_usuario:str, monto:float, us
 def ingresar_equipo(equipos: dict)->int:
     id=0
     while(id==0):
-        print("Ingrese nombre del equipo que desee ver el plantel")
+        print("Ingrese nombre del equipo:")
         equipo_elegido=input()
         id= obtener_id_equipo(equipos, equipo_elegido)
     return id
@@ -329,21 +329,27 @@ def main()->None:
                 else:
                     print("Ups, lo sentimos, no podemos satisfacer su petición. Intente de nuevo más tarde")
             elif opcion == 2:
-                print("Ingrese el anio del cual desea ver la tabla de posiciones de la Liga Argentina:")
-                temporada:int= Utilidades.ingresar_entero(2015, 2023)
-                params = {
-                    "league": "128",
-                    "season": temporada
-                }
-                posiciones=consultar_api("/standings",params)
-                if(posiciones != []):
-                    print("Posicion, Equipo, Pts")
-                    if(len(posiciones)>0):
-                        for equipo in range(len(posiciones[0]['league']['standings'][0])):
-                            datos_equipo=posiciones[0]['league']['standings'][0][equipo]                              
-                            print(datos_equipo['rank'],",",datos_equipo['team']['name'],",",datos_equipo['points'])
+                print("Ingrese el anio del cual desea ver la tabla de posiciones de la Liga Argentina: (2020 no disponible)")
+                temporada:int= int(Utilidades.ingresar_entero(2015, 2023))
+                if(temporada!=2020):
+                    params = {
+                        "league": "128",
+                        "season": temporada
+                    }
+                    posiciones=consultar_api("/standings",params)
+                    if(posiciones != []):
+                        if(len(posiciones)>0):
+                            print("Posicion, Equipo, Pts")
+                            ultima_actualizacion= len(posiciones[0]['league']['standings'])-1
+                            for equipo in range(len(posiciones[0]['league']['standings'][ultima_actualizacion])):
+                                datos_equipo=posiciones[0]['league']['standings'][ultima_actualizacion][equipo]                              
+                                print(datos_equipo['rank'],",",datos_equipo['team']['name'],",",datos_equipo['points'])
+                        else:
+                            print("Ups, lo sentimos, no podemos satisfacer su petición. Intente de nuevo más tarde")
                     else:
-                        print("Ups, lo sentimos, no podemos satisfacer su petición. Intente de nuevo más tarde")
+                        print("Parece que no contamos con la información necesaria actualmente, intente más tarde")
+                else:
+                    print("Lo sentimos... para 2020 no podemos mostrar la información solicitada")
             elif opcion == 3:
                 if(equipos!=[]):
                     print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
@@ -367,8 +373,8 @@ def main()->None:
                     }
                     estadisticas= consultar_api("/teams/statistics",params)
                     if (estadisticas!=[]):
-                        goles_por_minuto=estadisticas['goals']['for']['minute']
-                        intervalos_de_tiempo = goles_por_minuto.keys()
+                        goles_por_minuto:dict=estadisticas['goals']['for']['minute']
+                        intervalos_de_tiempo:list = goles_por_minuto.keys()
                         goles = []
                         for intervalo in goles_por_minuto.values():
                             if intervalo['total'] is None:
