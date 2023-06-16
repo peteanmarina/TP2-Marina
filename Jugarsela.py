@@ -391,6 +391,7 @@ def main()->None:
                 monto=Utilidades.ingresar_entero(0,99999)
                 if(monto!=0):
                     modificar_dinero_usuario(id_usuario, monto, "Suma", usuarios)
+                    print("Se le solicitará ingresar la fecha actual para finalizar transaccion")
                     fecha_actual=Utilidades.validar_fecha()
                     guardar_transaccion_en_diccionario(id_usuario,transacciones,fecha_actual,"Deposito",monto)
 
