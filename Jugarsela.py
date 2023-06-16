@@ -216,7 +216,7 @@ def verificar_si_usuario_tiene_dinero_suficiente(id_usuario:str, monto:float, us
 def ingresar_equipo(equipos: dict)->int:
     id=0
     while(id==0):
-        print("Ingrese nombre del equipo que desee ver el plantel")
+        print("Ingrese nombre del equipo:")
         equipo_elegido=input()
         id= obtener_id_equipo(equipos, equipo_elegido)
     return id
