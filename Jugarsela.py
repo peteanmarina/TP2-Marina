@@ -1,4 +1,5 @@
 import requests
+import csv
 import os
 from passlib.context import CryptContext
 import random
@@ -6,7 +7,6 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import tempfile
 import Utilidades
-import Manejo_Archivos
 
 #ctes
 URL = "https://v3.football.api-sports.io"
@@ -31,7 +31,7 @@ def registrar_usuario(usuarios:dict)-> str:
             'fecha_ultima_apuesta': None,
             'dinero': 0 #actual del usuario
         }
-        Manejo_Archivos.guardar_usuarios(usuarios) #se guarda en el archivo
+        guardar_usuarios(usuarios) #se guarda en el archivo
         print("Registro realizado, para apostar recuerde cargar dinero por primera vez")
     return correo 
 
@@ -104,13 +104,21 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
     params = {
         "fixture":informacion_partidos[fecha][4]
     }
-
+    print(informacion_partidos[fecha][2])
+    print(informacion_partidos[fecha][3])
     prediccion= consultar_api("/predictions",params)
-    equipo_win_or_draw = prediccion[0]['predictions']["winner"]["name"]
+    if(prediccion[0]["predictions"]["win_or_draw"]==True): #si winner tiene win or draw
+        equipo_win_or_draw = prediccion[0]['predictions']["winner"]["name"] 
+    else: #si winner no tiene win or draw, tomo como que lo tiene el otro equipo
+        print("winner no es win or draw")
+        if(prediccion[0]["teams"]["home"]["name"] == prediccion[0]['predictions']["winner"]["name"]): #si winner es local
+            equipo_win_or_draw= prediccion[0]["teams"]["away"]["name"] #win or draw lo tiene el visitante
+        else: #si winner es visitante
+            equipo_win_or_draw= prediccion[0]["teams"]["home"]["name"] #win or draw lo tiene el local
 
-    if(equipo_win_or_draw == informacion_partidos[fecha][0]):
+    if(equipo_win_or_draw == informacion_partidos[fecha][0]): #win or draw local
         informacion_partidos[fecha][2]=informacion_partidos[fecha][2]*10/100
-    elif(equipo_win_or_draw == informacion_partidos[fecha][1]):
+    elif(equipo_win_or_draw == informacion_partidos[fecha][1]): #win or draw visitante
         informacion_partidos[fecha][3]=informacion_partidos[fecha][3]*10/100
     else:
         print("Se produjo un error al reconocer win_or_draw")
@@ -171,6 +179,97 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
 
     else:
         print("Lamentamos informarle que no tiene dinero suficiente para realizar esta apuesta")
+
+
+def obtener_usuarios()-> dict:
+    #No recibe nada por parámetro
+    #Se encarga de guardar en un diccionario la información del archivo de usuarios
+    usuarios:dict = {}
+    archivo_usuarios:str = 'usuarios.csv'
+    try:
+        if os.path.isfile(archivo_usuarios): # si el archivo existe
+            with open(archivo_usuarios, 'r', encoding='UTF-8') as archivo_csv: # modo lectura
+                csv_reader = csv.reader(archivo_csv, delimiter=',')
+                next(csv_reader)
+                for row in csv_reader:
+                    correo = row[0]
+                    usuarios[correo] = {
+                        'nombre': row[1],
+                        'contrasena': row[2],
+                        'cantidad_total_apostada': float(row[3]),
+                        'fecha_ultima_apuesta': row[4],
+                        'dinero': float(row[5])
+                    }
+        else:
+            with open(archivo_usuarios, 'w', encoding='UTF-8', newline='') as archivo_csv:
+                encabezado = ["Correo", "Nombre", "Contraseña", "Cantidad Apostada", "Fecha Última Apuesta", "Dinero"]
+                csv_writer = csv.writer(archivo_csv)
+                csv_writer.writerow(encabezado)
+    except:
+        print("Error al abrir, leer o crear archivo de usuarios")
+    return usuarios
+
+def guardar_usuarios(usuarios:dict)-> None:
+    #Recibe diccionario de usuarios
+    #Reescribe el archivo usuarios con el contenido actualizado presente en el diccionario usuarios
+    try:
+        with open('usuarios.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
+            csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+            csv_writer.writerow(['correo', 'nombre', 'contrasena', 'cantidad_total_apostada', 'fecha_ultima_apuesta', 'dinero'])  # Escribir el encabezado
+            
+            for correo, datos in usuarios.items():
+                csv_writer.writerow([
+                    correo,
+                    datos['nombre'],
+                    datos['contrasena'],
+                    datos['cantidad_total_apostada'],
+                    datos['fecha_ultima_apuesta'],
+                    datos['dinero']
+                ])
+    except:
+        print("Error al abrir o escribir archivo usuarios")
+
+def obtener_transacciones()->dict:
+    #No recibe nada por parámetro
+    #Devuelve diccionario con el contenido del archivo transacciones. clave: id_usuario, datos: cada transaccion
+    transacciones = {}
+    archivo_transacciones = 'transacciones.csv'
+    usuarios=[]
+    if os.path.isfile(archivo_transacciones): # si el archivo existe
+        with open(archivo_transacciones, 'r', encoding='UTF-8') as archivo_csv: # modo lectura
+            csv_reader = csv.reader(archivo_csv, delimiter=',')
+            next(csv_reader)
+            for fila in csv_reader:
+                id_usuario = fila[0]
+                fecha = fila[1]
+                tipo = fila[2]
+                importe = float(fila[3])
+                if id_usuario not in usuarios:
+                    usuarios.append(id_usuario)
+                    transacciones[id_usuario] = [[fecha, tipo, importe]]
+                else:
+                    transacciones[id_usuario].append([fecha, tipo, importe])
+    else:
+        with open(archivo_transacciones, 'w', encoding='UTF-8', newline='') as archivo_csv:
+            encabezado = ["Id Usuario", "Fecha", "Tipo", "Importe"]
+            csv_writer = csv.writer(archivo_csv)
+            csv_writer.writerow(encabezado)
+    return transacciones
+
+def guardar_transacciones(transacciones:dict)->None:
+    #Recibe diccionario de transacciones
+    #Reescribe el archivo de transacciones con el contenido del diccionario de transacciones
+    with open('transacciones.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
+        csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+        csv_writer.writerow(['id_usuario', 'fecha', 'tipo', 'importe'])  # escribo el encabezado    
+        for id_usuario, lista_transacciones in transacciones.items():
+            for transaccion in lista_transacciones:
+                csv_writer.writerow([
+                    id_usuario,
+                    transaccion[0], #fecha
+                    transaccion[1], #tipo
+                    transaccion[2] #importe
+                ])
 
 def registrar_apuesta_en_usuario(id_usuario:str, monto:float, fecha:str, usuarios:dict)->None:
     #Recibe id_usuario, monto a apostar, fecha de la apuesta y el diccionario de usuarios
@@ -287,8 +386,8 @@ def main()->None:
     print("-"*80)
     print()
     print("Bienvenidx al portal de apuestas Jugarsela")
-    usuarios:dict=Manejo_Archivos.obtener_usuarios() #del archivo usuarios.csv
-    transacciones:dict=Manejo_Archivos.obtener_transacciones() #del archivo transacciones.csv
+    usuarios:dict=obtener_usuarios() #del archivo usuarios.csv
+    transacciones:dict=obtener_transacciones() #del archivo transacciones.csv
 
     finalizar = False #True si el usuario decide salir
     id_usuario:str= 0 #Si hubo problemas al identificarse
@@ -311,8 +410,9 @@ def main()->None:
         params = {"league": "128","season": 2023}
         fixtures:dict= consultar_api("/fixtures", params)
         for partido in fixtures:
-                partido['teams']['home']['cantidad_veces_pago'] = Utilidades.obtener_cantidad_de_veces()
-                partido['teams']['away']['cantidad_veces_pago'] = Utilidades.obtener_cantidad_de_veces()
+                cantidad_de_veces=Utilidades.obtener_cantidad_de_veces()
+                partido['teams']['home']['cantidad_veces_pago'] = cantidad_de_veces
+                partido['teams']['away']['cantidad_veces_pago'] = cantidad_de_veces
     while not finalizar:
         mostrar_menu()
         opcion = Utilidades.ingresar_entero(0,8)
@@ -438,8 +538,8 @@ def main()->None:
                 print("Error desconocido (revisar validación)")
         else:
             finalizar = True
-            Manejo_Archivos.guardar_usuarios(usuarios)
-            Manejo_Archivos.guardar_transacciones(transacciones)
+            guardar_usuarios(usuarios)
+            guardar_transacciones(transacciones)
     print("-"*80)
     print("Hasta pronto")
     print("-"*80)
