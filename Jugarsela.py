@@ -423,7 +423,7 @@ def main()->None:
                     params = {"league": "128","season": 2023, "team": id}
                     jugadores_del_equipo:dict=consultar_api("/players", params)
                     for jugador in jugadores_del_equipo:
-                        print(f"Nombre:",jugador['player']['name']," Posición:", jugador['statistics']['games']['position'])
+                        print(f"Nombre:",jugador['player']['name']," Posición:", jugador['statistics'][0]['games']['position'])
                 else:
                     print("Ups, lo sentimos, no podemos satisfacer su petición. Intente de nuevo más tarde")
             elif opcion == 2:
@@ -521,7 +521,7 @@ def main()->None:
                     if cantidad > max_cant_veces_ganadas:
                         max_cant_veces_ganadas = cantidad
                         usuario_mas_gano = usuario
-                print("El usuario que más veces ganó fue:",usuarios[usuario_mas_gano]['nombre']," (mail",usuario_mas_gano,") y ganó:",max_cant_veces_ganadas, " veces")
+                print("El usuario que más veces ganó fue:",usuarios[usuario_mas_gano]['nombre']," (mail",usuario_mas_gano,") y ganó ",max_cant_veces_ganadas, " veces")
             elif opcion == 8:
                 tiene_dinero= verificar_si_usuario_tiene_dinero_suficiente(id_usuario, 1, usuarios) #se le solicita tener al menos 1 peso
                 if(equipos !=[] and fixtures!=[]):
