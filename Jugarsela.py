@@ -60,12 +60,12 @@ def mostrar_menu()-> None:
     print("-"*80)
     print("0) Salir")
     print("1) Mostrar el plantel completo de un equipo ingresado")
-    print("2) Mostrar la tabla de posiciones de la Liga profesional de una temporada")
+    print("2) Mostrar la tabla de posiciones en una temporada")
     print("3) Información sobre el estadio y escudo de un equipo")
-    print("4) Goles y los minutos en los que fueron realizados para un equipo")
+    print("4) Gráfico de goles por minuto para un equipo")
     print("5) Cargar dinero en cuenta de usuario") 
     print("6) Usuario que más apostó") 
-    print("7) Usuario que más gano")
+    print("7) Usuario que más veces ganó")
     print("8) Apostar")
     print("-"*80)
     
@@ -104,8 +104,6 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
     params = {
         "fixture":informacion_partidos[fecha][4]
     }
-    print(informacion_partidos[fecha][2])
-    print(informacion_partidos[fecha][3])
     prediccion= consultar_api("/predictions",params)
     if(prediccion[0]["predictions"]["win_or_draw"]==True): #si winner tiene win or draw
         equipo_win_or_draw = prediccion[0]['predictions']["winner"]["name"] 
@@ -275,7 +273,7 @@ def registrar_apuesta_en_usuario(id_usuario:str, monto:float, fecha:str, usuario
     #Recibe id_usuario, monto a apostar, fecha de la apuesta y el diccionario de usuarios
     #Modifica el diccionario de usuarios, sumando la nueva apuesta a la cantidad apostada y actualizando la fecha de la ultima apuesta
     usuarios[id_usuario]['cantidad_total_apostada']=(float(usuarios[id_usuario]['cantidad_total_apostada']))+float(monto)
-    usuarios[id_usuario]['fecha_ultima_apuesta']+=fecha
+    usuarios[id_usuario]['fecha_ultima_apuesta']=fecha
 
 def guardar_transaccion_en_diccionario(id_usuario:str, transacciones:dict, fecha_actual:str, tipo:str, monto:float)->None:
     #Recibe id_usuario, diccionario transacciones, fecha actual, tipo de transaccion y monto de la misma
@@ -315,7 +313,7 @@ def verificar_si_usuario_tiene_dinero_suficiente(id_usuario:str, monto:float, us
 def ingresar_equipo(equipos: dict)->int:
     id=0
     while(id==0):
-        print("Ingrese nombre del equipo:")
+        print("Ingrese nombre del equipo: (Respetar mayusculas y minusculas)")
         equipo_elegido=input()
         id= obtener_id_equipo(equipos, equipo_elegido)
     return id
@@ -375,7 +373,7 @@ def obtener_id_equipo(equipos:dict, equipo_elegido:str)->int:
     #Devuelve el id del equipo, 0 si no se encuentra el id_equipo en equipos
     id=0
     for equipo in equipos:
-        if(equipo_elegido) == (equipo['team']['name']):
+        if((equipo_elegido) == (equipo['team']['name'])):
             id=equipo['team']['id']
     return id
 
@@ -425,7 +423,7 @@ def main()->None:
                     params = {"league": "128","season": 2023, "team": id}
                     jugadores_del_equipo:dict=consultar_api("/players", params)
                     for jugador in jugadores_del_equipo:
-                        print(jugador['player']['name'])
+                        print(f"Nombre:",jugador['player']['name']," Posición:", jugador['statistics'][0]['games']['position'])
                 else:
                     print("Ups, lo sentimos, no podemos satisfacer su petición. Intente de nuevo más tarde")
             elif opcion == 2:
@@ -510,20 +508,20 @@ def main()->None:
                 print(f"El usuario que más dinero apostó hasta la fecha es:",usuario_mas_aposto," y apostó un total de ",cantidad_max," pesos")
 
             elif opcion == 7:
-                ganado_por_usuario={} #diccionario que tiene de clave, el id_usuario y de dato la cantidad ganada 
+                cantidad_apuestas_ganadas_por_usuario={} #diccionario que tiene de clave, el id_usuario y de dato la cantidad de veces que ganó
                 for usuario in transacciones:
-                    ganado_por_usuario[usuario]=0
+                    cantidad_apuestas_ganadas_por_usuario[usuario]=0
                     for transaccion in transacciones[usuario]:
                         if(transaccion[1]=="Gana"):
-                            ganado_por_usuario[usuario]+=transaccion[2]
+                            cantidad_apuestas_ganadas_por_usuario[usuario]+=1
                 max=0
                 usuario_mas_gano = ""
-                max_ganancia=0
-                for usuario, ganancia in ganado_por_usuario.items():
-                    if ganancia > max_ganancia:
-                        max_ganancia = ganancia
+                max_cant_veces_ganadas=0
+                for usuario, cantidad in cantidad_apuestas_ganadas_por_usuario.items():
+                    if cantidad > max_cant_veces_ganadas:
+                        max_cant_veces_ganadas = cantidad
                         usuario_mas_gano = usuario
-                print("El usuario que más ganó fue:",usuarios[usuario_mas_gano]['nombre']," (mail",usuario_mas_gano,") y ganó un total de:",max_ganancia)
+                print("El usuario que más veces ganó fue:",usuarios[usuario_mas_gano]['nombre']," (mail",usuario_mas_gano,") y ganó ",max_cant_veces_ganadas, " veces")
             elif opcion == 8:
                 tiene_dinero= verificar_si_usuario_tiene_dinero_suficiente(id_usuario, 1, usuarios) #se le solicita tener al menos 1 peso
                 if(equipos !=[] and fixtures!=[]):
