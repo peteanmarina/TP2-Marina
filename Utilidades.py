@@ -5,7 +5,7 @@ def ingresar_entero(min: int, max: int)->int:
     #Devuelve un entero, ingresado por el usuario
     numero:str=input()
     while (not numero.isdigit() or int(numero)>max or int(numero)<min):
-        #Si la primera condicion se cumple, no lee las que siguen y por eso ya puedo convertirlo a int
+        #Si la primera condici/on se cumple, no lee las que siguen y por eso ya puedo convertirlo a int
         print(f"ERROR. Intente de nuevo, recuerde que debe ser un numero entero entre {min} y {max}")
         numero=input()
     return int(numero)
@@ -14,12 +14,17 @@ def ingresar_float(min: float, max: float) ->float:
     #Funcion que recibe un numero float mínimo y uno máximo y permite al usuario ingresar valores hasta que uno sea float y se encuentre en el rango númerico indicado por esos números
     #Devuelve un float, ingresado por el usuario
     numero:str=""
-    while(numero==""):
+    invalido=True
+    while(invalido):
         try:
-            numero:str=input()
-            numero= float(numero)
+            numero=float(input())
+            if(float(numero)>max or float(numero)<min):
+                invalido=True
+                print("Intente nuevamente. Recuerde que el número debe encontrarse entre ",min, " y ",max)
+            else:
+                invalido=False
         except:
-            print("Intente nuevamente")
+            print("Intente nuevamente. Recuerde ingresar un número")
             numero=""
     return float(numero)
    
@@ -47,8 +52,9 @@ def validar_fecha()->int:
     fecha=0
     while(fecha_invalida):
         fecha_invalida=False
-        print("Ingrese fecha")
+        print("Ingrese una fecha válida")
         fecha=input()
+        print("-"*80)
         partes = fecha.split('-')
 
         if ((len(partes) != 3)) or ((len(partes[0]) != 4) or (len(partes[1]) != 2) or (len(partes[2]) != 2)):
@@ -63,6 +69,13 @@ def validar_fecha()->int:
                 if ((anio < 1) or (mes < 1) or (mes > 12) or (dia < 1) or (dia > 31)):
                     fecha_invalida=True
     return fecha
+
+def validar_fecha_mayor(fecha1:str, fecha2:str)->bool:
+    if fecha1 > fecha2:
+        es_mayor=True
+    else:
+        es_mayor=False
+    return es_mayor
 
 def obtener_cantidad_de_veces()->int:
     #No recibe nada por parámetro
