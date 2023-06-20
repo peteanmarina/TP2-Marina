@@ -6,6 +6,7 @@ import random
 import matplotlib.pyplot as plt #graficar
 import matplotlib.image as mpimg #manipular imagenes
 import tempfile #archivos temporales
+from datetime import date #para fecha actual
 import Utilidades
 
 #ctes
@@ -63,30 +64,31 @@ def mostrar_menu()-> None:
     print("1) Mostrar el plantel completo de un equipo ingresado")
     print("2) Mostrar la tabla de posiciones en una temporada")
     print("3) Información sobre el estadio y escudo de un equipo")
-    print("4) Gráfico de goles por minuto para un equipo")
+    print("4) Gráfico de goles por minuto para un equipo de la liga en 2023")
     print("5) Cargar dinero en cuenta de usuario") 
     print("6) Usuario que más apostó") 
     print("7) Usuario que más veces ganó")
     print("8) Apostar")
     print("-"*80)
     
-def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transacciones:dict)->None:
+def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transacciones:dict, fecha_actual:str)->None:
     #Recibe diccionarios de: equipos, partidos, usuarios y transacciones, además del mail del usuario que actualmente usa el programa
     #Permite al usuario apostar, y al finalizar en el diccionario de usuarios y de transacciones apareceran los cambios o ingresos correspondientes
     print("-"*80)
-    print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
+    print("Equipos de la Liga Profesional Argentina correspondientes a la temporada actual:")
     mostrar_equipos(equipos)
     print("-"*80)
     id_equipo=ingresar_equipo(equipos)
     informacion_partidos:dict={}
     for partido in fixtures:
-        if(partido["teams"]["home"]["id"]==id_equipo or partido["teams"]["away"]["id"]==id_equipo):
+        fecha,hora = partido["fixture"]["date"].split('T')
+        if((partido["teams"]["home"]["id"]==id_equipo or partido["teams"]["away"]["id"]==id_equipo) and Utilidades.validar_fecha_mayor(fecha, fecha_actual)):
+            #si el equipo elegido es local o visitante en el partido, y si el partido todavía no se jugó
             id_partido=partido['fixture']['id']
             local = partido["teams"]["home"]["name"]
             visitante = partido["teams"]["away"]["name"]
             pago_local= partido['teams']['home']['cantidad_veces_pago']
             pago_visitante= partido['teams']['away']['cantidad_veces_pago']
-            fecha,hora = partido["fixture"]["date"].split('T')
             informacion_partidos[fecha]=[local, visitante, pago_local, pago_visitante, id_partido]
             print("-"*80)
             print(f"Fecha: ",fecha)
@@ -97,7 +99,6 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
     print("Ingrese la fecha del partido para el que quiere apostar, YYYY-MM-DD")
     fecha= Utilidades.validar_fecha()
     print("-"*80)
-
     while(fecha not in informacion_partidos):
         print("Error. Ingrese una de las fechas mostradas anteriormente:")
         fecha= Utilidades.validar_fecha()
@@ -130,8 +131,6 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
     dinero_suficiente= verificar_si_usuario_tiene_dinero_suficiente(id_usuario, monto_a_apostar, usuarios)
 
     if (dinero_suficiente):
-        print("Le solicitaremos la fecha del día de hoy para finalizar la transaccion")
-        fecha_actual=Utilidades.validar_fecha()
         print("-"*80)
         print("Descontando dinero... Por favor aguarde")
         registrar_apuesta_en_usuario(id_usuario, monto_a_apostar, fecha_actual, usuarios) #actualiza fecha ultima apuesta y suma monto al total apostado
@@ -172,7 +171,7 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
             guardar_transaccion_en_diccionario(id_usuario, transacciones, fecha_actual, "Gana", ganancia_total)
             modificar_dinero_usuario(id_usuario, monto,"Suma",usuarios)
         else: #pierde (sale algo distinto a lo que apostó)
-            print(f"Perdiste tus ",monto_a_apostar,"pesos, mejor suerte la próxima")
+            print(f"Perdiste ",monto_a_apostar,"pesos, mejor suerte la próxima")
             guardar_transaccion_en_diccionario(id_usuario, transacciones, fecha_actual, "Pierde", -(monto_a_apostar))
     else: #no tiene dinero suficiente para la apuesta que quiere hacer
         print("Lamentamos informarle que no tiene dinero suficiente para realizar esta apuesta")
@@ -403,10 +402,15 @@ def main()->None:
             finalizar= True
 
     if (not finalizar): #si el usuario decide salir, no hago las consultas a la api (una sola vez x eso no en el while)
+        
+        fecha = date.today()
+        fecha_actual = fecha.strftime("%Y-%m-%d")
+        anio_actual = fecha.year
+
         #cargo mis estructuras
-        params = {"league": "128","country": "Argentina","season": 2023}
+        params = {"league": "128","country": "Argentina","season": anio_actual}
         equipos:dict= consultar_api("/teams", params)
-        params = {"league": "128","season": 2023}
+        params = {"league": "128","season": anio_actual}
         fixtures:dict= consultar_api("/fixtures", params)
         for partido in fixtures:
                 cantidad_de_veces=Utilidades.obtener_cantidad_de_veces()
@@ -415,7 +419,7 @@ def main()->None:
     while not finalizar:
         mostrar_menu()
         opcion = Utilidades.ingresar_entero(0,8)
-        if opcion!= 0: #opcion distinta de 0)Salir
+        if opcion!= 0: #opcion distinta de "0)Salir"
 
             if opcion == 1: #mostrar plantel de un equipo elegido
                 if(equipos != []): #si equipos tiene información
@@ -434,7 +438,7 @@ def main()->None:
             
             elif opcion == 2: #ver tabla de posiciones
                 print("Ingrese el anio del cual desea ver la tabla de posiciones de la Liga Argentina: (2020 no disponible)")
-                temporada:int= int(Utilidades.ingresar_entero(2015, 2023))
+                temporada:int= int(Utilidades.ingresar_entero(2015, anio_actual))
                 if(temporada!=2020):
                     params = {
                         "league": "128",
@@ -504,8 +508,6 @@ def main()->None:
                 monto=Utilidades.ingresar_entero(0,99999)
                 if(monto!=0):
                     modificar_dinero_usuario(id_usuario, monto, "Suma", usuarios)
-                    print("Se le solicitará ingresar la fecha actual para finalizar transaccion")
-                    fecha_actual=Utilidades.validar_fecha()
                     guardar_transaccion_en_diccionario(id_usuario,transacciones,fecha_actual,"Deposito",monto)
 
             elif opcion == 6: #usuario que más dinero apostó
@@ -537,7 +539,7 @@ def main()->None:
                 if(equipos !=[] and fixtures!=[]):
                     if (tiene_dinero): #si el usuario tiene por lo menos 1 peso
                         print("Bienvenidx al sistema de apuestas")
-                        apostar(equipos, fixtures, id_usuario, usuarios, transacciones)
+                        apostar(equipos, fixtures, id_usuario, usuarios, transacciones, fecha_actual)
                     else: #no tiene dinero el usuario
                         print("No tenes dinero, debes cargar algo a tu cuenta para poder apostar")
                 else: #no hay datos en los diccionarios
