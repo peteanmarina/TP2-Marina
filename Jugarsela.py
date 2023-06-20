@@ -176,7 +176,6 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
     else: #no tiene dinero suficiente para la apuesta que quiere hacer
         print("Lamentamos informarle que no tiene dinero suficiente para realizar esta apuesta")
 
-
 def obtener_usuarios()-> dict:
     #No recibe nada por parámetro
     #Se encarga de guardar en un diccionario la información del archivo de usuarios y devuelve el mismo
