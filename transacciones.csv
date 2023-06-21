@@ -1,19 +1,13 @@
-"id_usuario","fecha","tipo","importe"
-"mariii@gmail.com","2023-07-14","Gana",100.0
+"Id Usuario","Fecha","Tipo","Importe"
 "mariii@gmail.com","2023-08-03","Deposita",300.0
+"mariii@gmail.com","2023-07-14","Gana",100.0
 "mariii@gmail.com","2023-08-15","Pierde",-100.0
 "mariii@gmail.com","2023-06-15","Deposito",100.0
 "mariii@gmail.com","2023-06-16","Pierde",-100.0
 "mariii@gmail.com","2023-06-16","Pierde",-1000.0
-"mariii@gmail.com","2023-06-17","Pierde",-100.0
 "mariii@gmail.com","2023-06-18","Pierde",-100.0
 "mariii@gmail.com","2023-06-19","Gana",150.0
-"mariii@gmail.com","2023-06-16","Pierde",-450.0
-"mariii@gmail.com","2023-06-16","Deposito",50.0
-"mariii@gmail.com","2023-06-16","Pierde",-50.0
-"mariii@gmail.com","2023-06-16","Gana",50.0
-"mariii@gmail.com","2023-06-16","Pierde",-400.0
-"mariii@gmail.com","2023-06-18","Deposito",100
+"marinaa_fuiba@gmail.com","2023-07-10","Deposita",1000.0
 "marinaa_fuiba@gmail.com","2023-07-10","Gana",100.0
 "marinaa_fuiba@gmail.com","2023-08-15","Gana",900.0
 "petean@gmail.com","2023-08-15","Deposita",700.0
@@ -29,3 +23,13 @@
 "user@gmail.com","2023-06-18","Pierde",-100.0
 "user@gmail.com","2023-06-18","Gana",100.0
 "user@gmail.com","2023-06-18","Gana",70.0
+"lupita@gmail.com","2023-06-20","Deposito",10000.0
+"lupita@gmail.com","2023-06-20","Gana",20000.0
+"lupita@gmail.com","2023-06-20","Pierde",-30000.0
+"lupita@gmail.com","2023-06-20","Deposito",100.0
+"lupita@gmail.com","2023-06-20","Gana",1.0
+"lupita@gmail.com","2023-06-20","Gana",30.0
+"lupita@gmail.com","2023-06-20","Pierde",-1.0
+"lupita@gmail.com","2023-06-20","Pierde",-100.0
+"lupita@gmail.com","2023-06-20","Pierde",-10.0
+"lupita@gmail.com","2023-06-20","Gana",30.0
