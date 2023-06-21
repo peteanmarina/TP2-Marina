@@ -64,7 +64,7 @@ def mostrar_menu()-> None:
     print("1) Mostrar el plantel completo de un equipo ingresado")
     print("2) Mostrar la tabla de posiciones en una temporada")
     print("3) Información sobre el estadio y escudo de un equipo")
-    print("4) Gráfico de goles por minuto para un equipo de la liga en 2023")
+    print("4) Gráfico de goles por minuto para un equipo")
     print("5) Cargar dinero en cuenta de usuario") 
     print("6) Usuario que más apostó") 
     print("7) Usuario que más veces ganó")
@@ -75,20 +75,19 @@ def apostar(equipos:dict, fixtures: dict, id_usuario:str, usuarios:dict, transac
     #Recibe diccionarios de: equipos, partidos, usuarios y transacciones, además del mail del usuario que actualmente usa el programa
     #Permite al usuario apostar, y al finalizar en el diccionario de usuarios y de transacciones apareceran los cambios o ingresos correspondientes
     print("-"*80)
-    print("Equipos de la Liga Profesional Argentina correspondientes a la temporada actual:")
     mostrar_equipos(equipos)
     print("-"*80)
     id_equipo=ingresar_equipo(equipos)
     informacion_partidos:dict={}
     for partido in fixtures:
         fecha,hora = partido["fixture"]["date"].split('T')
-        if((partido["teams"]["home"]["id"]==id_equipo or partido["teams"]["away"]["id"]==id_equipo) and Utilidades.validar_fecha_mayor(fecha, fecha_actual)):
+        if((partido["teams"]["home"]["id"]==id_equipo or partido["teams"]["away"]["id"]==id_equipo) and validar_fecha_mayor(fecha, fecha_actual)):
             #si el equipo elegido es local o visitante en el partido, y si el partido todavía no se jugó
             id_partido=partido['fixture']['id']
             local = partido["teams"]["home"]["name"]
             visitante = partido["teams"]["away"]["name"]
-            pago_local= partido['teams']['home']['cantidad_veces_pago']
-            pago_visitante= partido['teams']['away']['cantidad_veces_pago']
+            pago_local= partido['fixture']['cantidad_veces_pago']
+            pago_visitante= partido['fixture']['cantidad_veces_pago']
             informacion_partidos[fecha]=[local, visitante, pago_local, pago_visitante, id_partido]
             print("-"*80)
             print(f"Fecha: ",fecha)
@@ -333,11 +332,26 @@ def consultar_api(endpoint:str, params:dict)->dict:
             data = resultado.json()
             respuesta = data['response']  
     return respuesta
+
+def validar_fecha_mayor(fecha1:str, fecha2:str)->bool:
+    if fecha1 > fecha2:
+        es_mayor=True
+    else:
+        es_mayor=False
+    return es_mayor
+
+def obtener_cantidad_de_veces()->int:
+    #No recibe nada por parámetro
+    #Funcion que devuelve un numero random entero entre el 1 y el 4 inclusive, que representa la cantidad de veces base que se le pagara lo que apostó al usuario en caso de ganar
+    cantidad_veces=random.randint(1, 4)
+    return cantidad_veces
       
 def mostrar_informacion_estadio_y_escudo(id_equipo:int, equipos:dict)->None:
     #Recibe id de un equipo y el diccionario de equipos
     #Muestra información del estado y abre imagen del escudo del equipo ingresado
     estadio:dict={}
+    print()
+    print("Información del estadio y escudo:")
     for equipo in equipos:
         if(equipo['team']["id"]==id_equipo):
             estadio=equipo['venue']
@@ -348,7 +362,7 @@ def mostrar_informacion_estadio_y_escudo(id_equipo:int, equipos:dict)->None:
     print("Ciudad:", estadio['city'])
     print("Capacidad:", estadio['capacity'])
     print("Superficie:", estadio['surface'])
-
+    print()
     enlace_imagen:str = equipo_elegido['logo']
     response = requests.get(enlace_imagen)
     # guardo la imagen temporalmente
@@ -363,8 +377,10 @@ def mostrar_informacion_estadio_y_escudo(id_equipo:int, equipos:dict)->None:
 def mostrar_equipos(equipos:dict)->None:
     #Recibe diccionario de equipos
     #Muestra los nombres de los equipos del diccionario
+    print("Equipos de la Liga Profesional Argentina correspondientes a la temporada actual:")
     for equipo in equipos:
         print(equipo['team']['name'])
+    print()
 
 def obtener_id_equipo(equipos:dict, equipo_elegido:str)->int:
     #Recibe diccionario de equipos y un nombre de equipo
@@ -412,9 +428,7 @@ def main()->None:
         params = {"league": "128","season": anio_actual}
         fixtures:dict= consultar_api("/fixtures", params)
         for partido in fixtures:
-                cantidad_de_veces=Utilidades.obtener_cantidad_de_veces()
-                partido['teams']['home']['cantidad_veces_pago'] = cantidad_de_veces
-                partido['teams']['away']['cantidad_veces_pago'] = cantidad_de_veces
+                partido['fixture']['cantidad_veces_pago'] = obtener_cantidad_de_veces()
     while not finalizar:
         mostrar_menu()
         opcion = Utilidades.ingresar_entero(0,8)
@@ -422,12 +436,10 @@ def main()->None:
 
             if opcion == 1: #mostrar plantel de un equipo elegido
                 if(equipos != []): #si equipos tiene información
-                    print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
-                    print()
                     mostrar_equipos(equipos)
                     id= ingresar_equipo(equipos)
                     print()
-                    params = {"league": "128","season": 2023, "team": id}
+                    params = {"league": "128","season": anio_actual, "team": id}
                     jugadores_del_equipo:dict=consultar_api("/players", params)
                     print(f"Plantel del equipo seleccionado:")
                     for jugador in jugadores_del_equipo:
@@ -460,11 +472,8 @@ def main()->None:
             
             elif opcion == 3: #mostrar información estadio y escudo
                 if(equipos!=[]):
-                    print("Equipos de la Liga Profesional correspondiente a la temporada 2023:")
                     mostrar_equipos(equipos)
                     id=ingresar_equipo(equipos)
-                    print("Información del estadio y escudo.")
-                    print()
                     mostrar_informacion_estadio_y_escudo(id, equipos)
                 else:
                     print("Ups, lo sentimos, no podemos satisfacer su petición. Intente de nuevo más tarde")
@@ -521,8 +530,8 @@ def main()->None:
                 cantidad_apuestas_ganadas_por_usuario={} #diccionario que tiene de clave, el id_usuario y de dato la cantidad de veces que ganó
                 for usuario in transacciones:
                     cantidad_apuestas_ganadas_por_usuario[usuario]=0
-                    for transaccion in transacciones[usuario]:
-                        if(transaccion[1]=="Gana"):
+                    for transaccion in transacciones[usuario]: #por cada transaccion del usuario
+                        if(transaccion[1]=="Gana"): #si es de tipo gana
                             cantidad_apuestas_ganadas_por_usuario[usuario]+=1
                 max=0
                 usuario_mas_gano = ""
