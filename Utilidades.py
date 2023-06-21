@@ -76,9 +76,3 @@ def validar_fecha_mayor(fecha1:str, fecha2:str)->bool:
     else:
         es_mayor=False
     return es_mayor
-
-def obtener_cantidad_de_veces()->int:
-    #No recibe nada por parámetro
-    #Funcion que devuelve un numero random entero entre el 1 y el 4 inclusive, que representa la cantidad de veces base que se le pagara lo que apostó al usuario en caso de ganar
-    cantidad_veces=random.randint(1, 4)
-    return cantidad_veces
