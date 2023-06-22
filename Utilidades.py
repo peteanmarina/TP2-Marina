@@ -69,10 +69,3 @@ def validar_fecha()->int:
                 if ((anio < 1) or (mes < 1) or (mes > 12) or (dia < 1) or (dia > 31)):
                     fecha_invalida=True
     return fecha
-
-def validar_fecha_mayor(fecha1:str, fecha2:str)->bool:
-    if fecha1 > fecha2:
-        es_mayor=True
-    else:
-        es_mayor=False
-    return es_mayor
