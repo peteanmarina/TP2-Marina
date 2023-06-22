@@ -196,7 +196,7 @@ def obtener_usuarios()-> dict:
                     }
         else: #si el archivo no existe lo creo escribo el encabezado
             with open(archivo_usuarios, 'w', encoding='UTF-8', newline='') as archivo_csv:
-                encabezado = ["Correo", "Nombre", "Contrasenia", "Cantidad Apostada", "Fecha Última Apuesta", "Dinero"]
+                encabezado = ["Correo", "Nombre", "Contrasenia", "Cantidad Apostada", "Fecha Ultima Apuesta", "Dinero"]
                 csv_writer = csv.writer(archivo_csv)
                 csv_writer.writerow(encabezado)
     except:
@@ -209,7 +209,7 @@ def guardar_usuarios(usuarios:dict)-> None:
     try:
         with open('usuarios.csv', 'w', newline='', encoding='UTF-8') as archivo_csv:
             csv_writer = csv.writer(archivo_csv, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
-            encabezado = ["Correo", "Nombre", "Contrasenia", "Cantidad Apostada", "Fecha Última Apuesta", "Dinero"]
+            encabezado = ["Correo", "Nombre", "Contrasenia", "Cantidad Apostada", "Fecha Ultima Apuesta", "Dinero"]
             csv_writer.writerow(encabezado)  #escribir el encabezado
             for correo, datos in usuarios.items():
                 csv_writer.writerow([ #escribo los datos separados por comas
