@@ -472,7 +472,13 @@ def main()->None:
                             print("Posicion, Equipo, Pts")
                             fases= len(posiciones[0]['league']['standings'])
                             for fase in range(fases):
-                                print(f"Fase:", (fase+1))
+                                nombre_fase=posiciones[0]['league']['standings'][fase][0]['group']
+                                print()
+                                if(nombre_fase is None):
+                                    print(f"Posiciones:")
+                                else:
+                                    print(f"",(nombre_fase),":")
+                                print()
                                 for equipo in range(len(posiciones[0]['league']['standings'][fase])):
                                     datos_equipo=posiciones[0]['league']['standings'][fase][equipo]                              
                                     print(datos_equipo['rank'],",",datos_equipo['team']['name'],",",datos_equipo['points'])
